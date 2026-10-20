@@ -1,0 +1,9 @@
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+runs/
+outputs/
+*.pt
+*.npz
+*.npy

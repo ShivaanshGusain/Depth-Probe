@@ -1,0 +1,56 @@
+[project]
+name = "depthprobe"
+version = "0.1.0"
+description = "Layer-wise probes for testing whether Transformer depth behaves like denoising"
+readme = "README.md"
+requires-python = ">=3.10"
+# torch is deliberately not a base dependency: inside the GX10 PyTorch container the
+# container's own CUDA build is reused (see README). Elsewhere pick one extra below.
+dependencies = [
+    "transformers>=4.56",
+    "numpy>=1.26",
+    "pyarrow>=15",
+    "matplotlib>=3.8",
+    "packaging",
+]
+
+[project.optional-dependencies]
+cpu = ["torch>=2.9"]
+cu128 = ["torch>=2.9"]
+cu130 = ["torch>=2.9"]
+dev = ["pytest>=8"]
+
+[project.scripts]
+depthprobe = "depthprobe.__main__:main"
+
+[tool.uv]
+conflicts = [[{ extra = "cpu" }, { extra = "cu128" }, { extra = "cu130" }]]
+
+[tool.uv.sources]
+torch = [
+    { index = "pytorch-cpu", extra = "cpu" },
+    { index = "pytorch-cu128", extra = "cu128" },
+    { index = "pytorch-cu130", extra = "cu130" },
+]
+
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true
+
+[[tool.uv.index]]
+name = "pytorch-cu128"
+url = "https://download.pytorch.org/whl/cu128"
+explicit = true
+
+[[tool.uv.index]]
+name = "pytorch-cu130"
+url = "https://download.pytorch.org/whl/cu130"
+explicit = true
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
