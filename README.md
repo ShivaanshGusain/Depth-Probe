@@ -97,6 +97,169 @@ Optional variables: `DEVICE` (default `auto`), `BATCH` (8), `TRAIN_TOKENS` (4,00
 
 Individual commands: `python -m depthprobe {check,unigram,train-lens,measure,analyze} --help`.
 
+## Local middle-block fine-tuning
+
+### Ready-to-run RTX 4090 pilot
+
+```bash
+bash scripts/train_gpt2_4090.sh
+```
+
+This finds already-cached local GPT-2/WikiText-103 snapshots (or accepts `MODEL`
+and `DATA` paths). Defaults: blocks 4–8, one million training tokens, three epochs,
+full validation evaluation, batch 32, inference batch 16, readout chunk 1024,
+BF16 autocast with **FP32 master weights**, SDPA attention, fused AdamW, TF32,
+5% warmup and cosine decay. The script now defaults to **parameter-free RMS-space
+L2** (`L2_SPACE=rms`, strength 1.0). It downloads nothing. Reserve test for final evaluation.
+
+```bash
+BATCH=16 TRAIN_TOKENS=2000000 EPOCHS=3 OUT=runs/my-run \
+  bash scripts/train_gpt2_4090.sh
+python -m depthprobe report-segment runs/my-run --show
+```
+
+Live tqdm bars show cache/evaluation/training progress, token throughput, ETA,
+CE, accuracy, unweighted regularizer, maximum L2 deviation in reference-STD units,
+LR and peak allocated GPU memory. Every
+optimizer step is also flushed to `training.csv`. The final report is generated
+automatically: `report/results.png`, `report/results.md`, and paired 95%
+document-bootstrap changes in `report/paired_changes.json`. `--show` opens the plot.
+The image separates **truncated training-path** curves from **restored full-model**
+held-out results. The script exports a reusable full checkpoint to `model/`.
+
+Training and inference batch sizes are independent: cached windows are regrouped
+without padding by a memory-mapped, prefetched DataLoader. `--batch-size` controls
+the actual optimizer batch; `--inference-batch-size` controls caching/evaluation;
+`--chunk` bounds vocabulary-head working memory, **not** the optimizer batch.
+There is no gradient accumulation by default. Use `--no-progress` for quiet runs.
+
+On the local 4090, a short synthetic GPT-2 blocks 4–8 benchmark at context 1024
+measured roughly 78–82k scored tokens/sec for batches 8–32; batch 64 OOMed.
+Batch 32 used about 12.7 GiB peak allocated memory. These are compute-only results,
+not end-to-end guarantees; `training.csv` records actual throughput. Larger batches
+reduce the number of updates at a fixed token budget, so batch size is also an
+experimental hyperparameter. Benchmark a different range with:
+
+```bash
+python scripts/benchmark_segment.py --model /local/gpt2 \
+  --first-block 4 --last-block 8 --batch-sizes 8,16,32,48 --chunks 1024,2048
+```
+
+One million tokens require approximately 9 GiB for these float32 hidden-state
+caches; four million require roughly 35 GiB. Disk headroom is checked before
+caching. The original continuous-stream boundary convention remains unchanged:
+documents may attend across boundaries inside a window; batch rows remain isolated
+and attention remains causal. No EOS separators or document-boundary masks are added.
+
+`finetune-segment` trains **actual Transformer blocks**, not lens translators. The
+training path is cached prefix activations → selected blocks → frozen original
+final norm/head, supervised by ordinary next-token cross-entropy. The suffix is
+omitted **only during training**. Before/after evaluation uses the complete model,
+with the untouched suffix receiving the modified segment's outputs.
+
+```bash
+python -m depthprobe finetune-segment \
+  --model "$MODELS/gpt2" --data "$DATA/wikitext/wikitext-103-raw-v1" \
+  --first-block 4 --last-block 8 \
+  --train-split train --train-tokens 200000 \
+  --split validation --max-tokens 20000 \
+  --ctx 1024 --stride 512 --batch-size 2 --chunk 256 \
+  --device cuda --inference-device auto \
+  --epochs 1 --lr 1e-5 --regularizer l2 --reg-strength 1.0 --l2-space rms \
+  --out "$OUT/gpt2-blocks-4-8"
+```
+
+Block numbers are **1-based and inclusive**: `4..8` trains five blocks. Both ends
+are parameters so range/length grids can use the same command with distinct output
+directories. Each invocation starts from `--model`, not the preceding run. Use
+validation for initial runs/grid selection and reserve the test split for final
+evaluation. These settings are starting points, not validated hyperparameters.
+For individual text/Parquet files, provide a separate `--train-data` file.
+
+The L2 regularizer constrains **output activations, not weights**. With `--l2-space rms`:
+
+```text
+loss = mean_token CE(next_token, original_head(original_final_norm(new_exit)))
+     + reg_strength * mean_token,feature ((rms(new_exit) - rms(original_exit)) / scale)^2
+rms(h) = h / sqrt(mean_feature(h^2) + rms_eps)
+scale[feature] = max(sample_STD(rms(original_exit)[:, feature]), std_floor)
+```
+
+This RMS transform has **no learned parameters**, gain, bias, or mean subtraction;
+it does not use the model's LayerNorm/RMSNorm weights. `--rms-eps` defaults to
+`1e-6`, and the same epsilon is used for reference statistics and training. The
+model's original frozen final normalization remains in the CE/readout path only.
+RMS normalization removes overall per-token magnitude, so this penalty constrains
+normalized coordinates, not the raw residual-stream norm.
+
+The per-feature sample standard deviations are computed over scored training
+tokens during the initial untouched-model caching pass (`--std-floor`, default
+`1e-4`, protects near-constant features). Supervision and regularization apply at
+the **segment exit**, not every internal block. Reference moments are frozen and
+saved under `rms` in `cache/activation_stats.pt`. Original residual-space moments
+are also retained. The CLI default `--l2-space residual` reproduces the earlier raw
+activation penalty; the 4090 script defaults to `rms`. Use `L2_SPACE=residual` to
+compare against the earlier script behavior. **L2 is a soft mean penalty, not a
+hard bound on every activation**; `max_dev_std` in tqdm and
+`max_l2_deviation_std` in the CSV expose large individual deviations. Alternatives:
+
+The max-STD diagnostic is only measured for L2 runs: it is omitted from the
+KL/CE-only progress bars and stored as JSON `null` / a blank CSV cell, not zero.
+KL progress instead labels its measured regularization term `KL`. Historical
+KL runs written before this fix may contain placeholder zeros, not measured drift.
+
+- `--regularizer kl`: KL(original untuned exit-lens distribution ‖ new exit-lens
+  distribution). This is a regularizer; targets remain the real next tokens.
+  `--kl-strength` sets its weight and defaults to `--reg-strength`.
+- `--regularizer both`: L2 plus KL:
+  `loss = CE + reg_strength * L2 + kl_strength * KL`. The two weights are
+  independent, and the CSV records `l2_penalty` and `kl_penalty` separately.
+- `--regularizer none`: CE only.
+
+To run both with the RMS-space L2:
+
+```bash
+REGULARIZER=both REG_STRENGTH=1.0 KL_STRENGTH=1.0 OUT=runs/gpt2-both \
+  bash scripts/train_gpt2_4090.sh
+```
+
+Equal weights do not mean equal constraint strength: the two penalties have
+different units and gradients. The progress bar shows `L2` and `KL` separately,
+and the report plots both unweighted terms.
+
+On this workstation, experiment storage resides at
+`/media/user/archive/Depth-Probe/runs` on the larger hard drive, with the local
+`runs` path retained as a symlink. An absolute `OUT` on that drive
+also works directly. Each invocation generates its own fresh activation cache;
+there is no cross-run cache-reuse option.
+
+Cached disk shards contain prefix activations, original segment-exit and final
+pre-norm states, native full-model predictions/NLL, labels, and document/token
+indices. Reference states reconstruct original lens probabilities through the
+frozen readout without storing vocabulary-sized distributions. Only the selected
+blocks and frozen norm/head reside on the training GPU; optimizer state belongs
+only to the selected blocks. Readout backward passes are chunked by `--chunk`.
+The complete model remains in CPU RAM during segment training. Initial caching
+and full-model evaluation are ordinary inference; use `--inference-device cpu`
+if the complete model cannot fit on GPU (slower). This is not yet a streaming or
+multi-device inference implementation. Dropout is disabled during this experiment
+to keep the activation references deterministic; gradients still train the blocks.
+
+Outputs:
+
+- `cache/batch-*.pt`, `cache/activation_stats.pt`, and `cache/cache.json` (per-run caches, freshly generated).
+- `segment.pt`: trained block weights, inclusive range, and source-model metadata;
+  selected modules share parameters with the full model during the run.
+- `before.npz` / `after.npz`: paired native full-model per-token NLL, correctness,
+  predictions, target IDs/indices, and document IDs.
+- `summary.json`: full-model CE, perplexity, next-token accuracy, after-minus-before
+  changes, prediction-change fraction, training-path history, and provenance.
+- With `--save-full-model`, `model/` is a directly loadable HF model/tokenizer.
+
+The command verifies that the extracted segment reproduces its original cached
+outputs **before making any updates**. Improved truncated-path training metrics
+do not imply improved full-model metrics; either outcome is an experimental result.
+
 ### What to check in the outputs
 
 - `check.json`:

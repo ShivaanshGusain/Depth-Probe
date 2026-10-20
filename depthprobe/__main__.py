@@ -216,6 +216,112 @@ def command_analyze(args):
     log(f"wrote {out}")
 
 
+def command_finetune_segment(args):
+    import copy
+
+    from depthprobe.data import load_corpus
+    from depthprobe.finetune import cache_training, evaluate_full, make_segment, token_count, train_segment, validate_range
+    from depthprobe.model import find_parts, hidden_width, resolve_device
+
+    if args.epochs < 1 or args.lr <= 0 or args.reg_strength < 0 or args.std_floor <= 0 or args.rms_eps <= 0:
+        sys.exit("Need epochs >= 1, lr > 0, reg-strength >= 0, std-floor > 0, rms-eps > 0")
+    kl_strength = args.reg_strength if args.kl_strength is None else args.kl_strength
+    if kl_strength < 0:
+        sys.exit("kl-strength must be nonnegative")
+    if args.train_split == args.split:
+        sys.exit("Training and evaluation splits must differ")
+    if Path(args.data).is_file() and (not args.train_data or Path(args.train_data).resolve() == Path(args.data).resolve()):
+        sys.exit("Single-file evaluation requires a separate --train-data file")
+    if args.batch_size < 1 or args.chunk < 1 or (args.inference_batch_size is not None and args.inference_batch_size < 1):
+        sys.exit("Batch sizes and chunk must be positive")
+    if args.amp != "none" and args.dtype != "float32":
+        sys.exit("Use --dtype float32 with --amp bfloat16 to keep FP32 optimizer/master weights")
+    out = prepare_dir(args.out, args.overwrite)
+    # Inference can run on CPU when the complete model does not fit on the training GPU.
+    inference_args = copy.copy(args)
+    inference_args.device = args.inference_device
+    model, tokenizer, readout, bos_id, inference_device, meta = setup(inference_args)
+    validate_range(model, args.first_block, args.last_block)
+    device = resolve_device(args.device)
+    if args.amp != "none" and (torch.device(device).type != "cuda" or not torch.cuda.is_bf16_supported()):
+        sys.exit("--amp bfloat16 requires a BF16-capable CUDA device")
+    torch.backends.cuda.matmul.allow_tf32 = args.tf32
+    torch.backends.cudnn.allow_tf32 = args.tf32
+    progress = not args.no_progress
+    inference_batch_size = args.inference_batch_size or args.batch_size
+    torch.manual_seed(args.seed)
+    evaluation = load_corpus(tokenizer, args.data, args.split, max_tokens=args.max_tokens, joiner=args.joiner)
+    eval_windows = windows_for(evaluation, args, bos_id, args.stride)
+    inference_amp = args.amp if torch.device(inference_device).type == "cuda" else "none"
+    eval_kwargs = dict(batch_size=inference_batch_size, bos_id=bos_id, device=inference_device,
+                       chunk=args.chunk, progress=progress, amp=inference_amp)
+    log("Evaluating untouched full model")
+    before, before_arrays = evaluate_full(model, evaluation, eval_windows, description="Full model BEFORE", **eval_kwargs)
+    np.savez(out / "before.npz", **before_arrays)
+    train = load_corpus(tokenizer, args.train_data or args.data, args.train_split,
+                        max_tokens=args.train_tokens, joiner=args.joiner, shuffle_seed=args.seed)
+    train_windows = windows_for(train, args, bos_id, args.ctx - (bos_id is not None))
+    import shutil
+
+    cache_dir = out / "cache"
+    # Three hidden-state caches dominate disk use; leave room for weights/reports.
+    cached_positions = sum(window.end - window.start for window in train_windows) + 2 * token_count(train_windows)
+    estimate = cached_positions * hidden_width(model) * next(model.parameters()).element_size()
+    free_disk = shutil.disk_usage(out).free
+    log(f"Estimated activation cache: {estimate / 2**30:.1f} GiB; free disk: {free_disk / 2**30:.1f} GiB")
+    if estimate > 0.9 * free_disk:
+        sys.exit("Insufficient disk headroom for cache; reduce --train-tokens or choose --out on a larger disk")
+    cache_meta = cache_training(model, train, train_windows, cache_dir, first=args.first_block,
+                                last=args.last_block, batch_size=inference_batch_size, bos_id=bos_id,
+                                device=inference_device, chunk=args.chunk, std_floor=args.std_floor, log=log,
+                                progress=progress, amp=inference_amp, rms_eps=args.rms_eps)
+    model.cpu()
+    readout.cpu()
+    if torch.cuda.is_available():
+        torch.cuda.empty_cache()
+    segment = make_segment(model, args.first_block, args.last_block)
+    history = train_segment(segment, readout, cache_dir, cache_meta, device=device, epochs=args.epochs,
+                            lr=args.lr, strength=args.reg_strength, regularizer=args.regularizer,
+                            chunk=args.chunk, seed=args.seed, log=log, batch_size=args.batch_size,
+                            workers=args.workers, progress=progress, amp=args.amp,
+                            lr_schedule=args.lr_schedule, warmup_fraction=args.warmup_fraction,
+                            log_path=out / "training.csv", log_every=args.log_every,
+                            l2_space=args.l2_space, rms_eps=args.rms_eps, kl_strength=kl_strength)
+    # Selected modules are shared by reference with the full model, not copied back.
+    segment.cpu()
+    readout.cpu()
+    blocks = torch.nn.ModuleList(list(find_parts(model).blocks)[args.first_block - 1:args.last_block])
+    torch.save({"state_dict": blocks.state_dict(), "first_block": args.first_block,
+                "last_block": args.last_block, "variant": meta["variant"], "permutation": meta["permutation"],
+                "model": model_fingerprint(args.model)}, out / "segment.pt")
+    del segment, blocks
+    model.requires_grad_(False).to(inference_device)
+    log("Evaluating full model with original suffix restored")
+    after, after_arrays = evaluate_full(model, evaluation, eval_windows, description="Full model AFTER", **eval_kwargs)
+    if not np.array_equal(before_arrays["target_index"], after_arrays["target_index"]):
+        raise RuntimeError("Before/after evaluation tokens do not align")
+    np.savez(out / "after.npz", **after_arrays)
+    comparison = {"before": before, "after": after,
+                  "delta_after_minus_before": {key: after[key] - before[key]
+                                               for key in ("cross_entropy", "perplexity", "accuracy")},
+                  "prediction_changed_fraction": float((before_arrays["prediction"] != after_arrays["prediction"]).mean())}
+    write_json(out / "summary.json", manifest(args, meta, training_device=device,
+                                               cache=cache_meta, history=history, evaluation=comparison))
+    if args.save_full_model:
+        model.cpu().save_pretrained(out / "model")
+        tokenizer.save_pretrained(out / "model")
+    log(json.dumps(comparison, indent=2))
+    from depthprobe.segment_report import report
+
+    report(out)
+
+
+def command_report_segment(args):
+    from depthprobe.segment_report import report
+
+    report(args.run_dir, out=args.out, show=args.show)
+
+
 def parser():
     root = argparse.ArgumentParser(prog="depthprobe", description=__doc__)
     commands = root.add_subparsers(dest="command", required=True)
@@ -274,6 +380,44 @@ def parser():
     analyze.add_argument("--out", required=True)
     analyze.add_argument("--overwrite", action="store_true")
     analyze.set_defaults(run=command_analyze)
+
+    fine = commands.add_parser("finetune-segment", help="CE-train a block range, then evaluate the restored full model")
+    add_model_args(fine)
+    add_data_args(fine, "test")
+    fine.add_argument("--first-block", required=True, type=int, help="First trained block, 1-based, inclusive")
+    fine.add_argument("--last-block", required=True, type=int, help="Last trained block, 1-based, inclusive")
+    fine.add_argument("--train-data", help="Separate local training corpus (default: --data directory)")
+    fine.add_argument("--train-split", default="train")
+    fine.add_argument("--train-tokens", type=int, default=200_000)
+    fine.add_argument("--inference-device", default="auto", help="Full-model cache/evaluation device; cpu saves GPU memory")
+    fine.add_argument("--epochs", type=int, default=1)
+    fine.add_argument("--lr", type=float, default=1e-5)
+    fine.add_argument("--regularizer", choices=["l2", "kl", "both", "none"], default="l2")
+    fine.add_argument("--reg-strength", type=float, default=1.0, help="L2 weight (and KL weight unless --kl-strength is set)")
+    fine.add_argument("--kl-strength", type=float, default=None,
+                      help="KL weight; defaults to --reg-strength. Used by --regularizer kl or both")
+    fine.add_argument("--l2-space", choices=["residual", "rms"], default="residual",
+                      help="L2 on raw residuals or parameter-free RMS-normalized activations, with matching reference STD")
+    fine.add_argument("--rms-eps", type=float, default=1e-6, help="Epsilon for parameter-free RMS normalization (no learned gain/bias)")
+    fine.add_argument("--std-floor", type=float, default=1e-4, help="Minimum per-feature activation STD for normalized L2")
+    fine.add_argument("--inference-batch-size", type=int, help="Cache/evaluation windows per batch (default: --batch-size)")
+    fine.add_argument("--amp", choices=["none", "bfloat16"], default="none", help="Mixed precision; FP32 master weights with BF16 compute")
+    fine.add_argument("--tf32", action="store_true", help="Allow TF32 matmuls; recorded in provenance")
+    fine.add_argument("--workers", type=int, default=0, help="Prefetch workers for memory-mapped activation shards")
+    fine.add_argument("--lr-schedule", choices=["none", "cosine"], default="none")
+    fine.add_argument("--warmup-fraction", type=float, default=0.05)
+    fine.add_argument("--log-every", type=int, default=1, help="Progress-bar metric refresh interval, in optimizer steps")
+    fine.add_argument("--no-progress", action="store_true", help="Disable tqdm bars (CSV logging remains enabled)")
+    fine.add_argument("--seed", type=int, default=0)
+    fine.add_argument("--save-full-model", action="store_true", help="Also export a full HF checkpoint (otherwise segment only)")
+    fine.add_argument("--out", required=True)
+    fine.add_argument("--overwrite", action="store_true")
+    fine.set_defaults(run=command_finetune_segment)
+    report = commands.add_parser("report-segment", help="Display/rebuild a segment fine-tuning report")
+    report.add_argument("run_dir", help="finetune-segment output directory")
+    report.add_argument("--out", help="Report directory (default: RUN/report)")
+    report.add_argument("--show", action="store_true", help="Also open an interactive matplotlib window")
+    report.set_defaults(run=command_report_segment)
     return root
 
 
