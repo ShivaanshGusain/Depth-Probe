@@ -82,9 +82,15 @@ GX10 pod, reusing the container's CUDA PyTorch:
 cd depth-probe
 uv venv --system-site-packages .venv
 source .venv/bin/activate
-uv pip install -e ".[dev]"
+# Keep the container's NumPy: its PyTorch is compiled against it (NumPy 1.26.4 in nv25.08 images).
+python3 -c "import numpy; print(f'numpy=={numpy.__version__}')" > container-constraints.txt   # run before installing
+uv pip install -e ".[dev]" -c container-constraints.txt
+python -c "import torch, numpy; torch.from_numpy(numpy.zeros(2)); print('ok', numpy.__version__)"
 python -m pytest
 ```
+
+A `Numpy is not available` error or a "compiled using NumPy 1.x" warning means a newer NumPy in the
+venv is shadowing the container's. Fix it with `uv pip install "numpy==<container version>"`.
 
 Outside the container, choose a torch build:
 

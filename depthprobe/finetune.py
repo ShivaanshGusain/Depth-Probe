@@ -238,7 +238,7 @@ def make_segment(model, first, last):
         segment.wpe = ZeroPositions(hidden_width(model), parts.container.wpe.weight.dtype)
         segment.ln_f = nn.Identity()
     elif parts.family == "gpt_neox":
-        segment.embed_in = nn.Identity()
+        segment.set_input_embeddings(nn.Identity())  # embed_in, under whatever name this version uses
         segment.final_layer_norm = nn.Identity()
     else:
         segment.embed_tokens = nn.Identity()

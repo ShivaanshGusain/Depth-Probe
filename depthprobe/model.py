@@ -37,14 +37,16 @@ class Parts:
 
 
 def find_parts(model):
+    # The output head's attribute name varies across versions (GPT-NeoX: embed_out, later lm_head).
+    head = model.get_output_embeddings()
     if hasattr(model, "transformer") and hasattr(model.transformer, "h"):
-        return Parts("gpt2", model.transformer, "h", model.transformer.ln_f, model.lm_head)
+        return Parts("gpt2", model.transformer, "h", model.transformer.ln_f, head)
     if hasattr(model, "gpt_neox"):
-        return Parts("gpt_neox", model.gpt_neox, "layers", model.gpt_neox.final_layer_norm, model.embed_out)
+        return Parts("gpt_neox", model.gpt_neox, "layers", model.gpt_neox.final_layer_norm, head)
     inner = getattr(model, "model", None)
     if inner is not None and hasattr(inner, "layers") and hasattr(inner, "norm"):
         # Llama, Mistral, Qwen2/3, OLMo-2 and similar decoder layouts.
-        return Parts("llama", inner, "layers", inner.norm, model.lm_head)
+        return Parts("llama", inner, "layers", inner.norm, head)
     raise ValueError(f"Unsupported architecture: {type(model).__name__}")
 
 
