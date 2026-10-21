@@ -76,15 +76,75 @@ def per_token_e3(arrays, lens, from_layer, eps):
     }, np.where(settled, settled_from.argmax(0) + from_layer, 0), settled
 
 
-def summarize(run_dir, *, from_layer, min_context, eps, n_boot, seed):
+QUANTILES = (0.05, 0.25, 0.5, 0.75, 0.95)
+
+
+def isotonic_nonincreasing(values, chunk=4096):
+    """Least-squares non-increasing fit along axis 0, separately for every column.
+
+    Uses the min-max formula g_i = min_{j>=i} max_{k<=i} mean(y[k..j]) for a non-decreasing fit of -y,
+    vectorized over columns; exact, and cheap for the few dozen states a model has.
+    """
+    values = np.asarray(values, dtype=np.float64)
+    steps = values.shape[0]
+    fit = np.empty_like(values)
+    first, last = np.arange(steps)[:, None], np.arange(steps)[None, :]
+    lengths = np.maximum(last - first + 1, 1).astype(np.float64)[:, :, None]
+    for start in range(0, values.shape[1], chunk):
+        part = slice(start, start + chunk)
+        flipped = -values[:, part]
+        cumulative = np.vstack([np.zeros((1, flipped.shape[1])), np.cumsum(flipped, axis=0)])
+        # means[k, j] = mean(flipped[k..j]); only k <= j is ever read.
+        means = (cumulative[1:][None, :, :] - cumulative[:-1][:, None, :]) / lengths
+        for i in range(steps):
+            fit[i, part] = -means[: i + 1, i:].max(axis=0).min(axis=0)
+    return fit
+
+
+def per_token_isotonic(values, flat_tol):
+    """How close each token's path (states x tokens, should fall with depth) is to monotone.
+
+    r2: 1 - residual / total variance after the best non-increasing fit (1 = monotone).
+    backtrack: share of all movement along the path that goes up (0 = monotone, 0.5 = no net trend).
+    Paths whose range is below flat_tol barely move; both scores are undefined for them.
+    """
+    values = np.asarray(values, dtype=np.float64)
+    fit = isotonic_nonincreasing(values)
+    flat = values.max(0) - values.min(0) < flat_tol
+    total = ((values - values.mean(0)) ** 2).sum(0)
+    residual = ((values - fit) ** 2).sum(0)
+    steps = np.diff(values, axis=0)
+    up, down = np.clip(steps, 0, None).sum(0), np.clip(-steps, 0, None).sum(0)
+    with np.errstate(divide="ignore", invalid="ignore"):
+        r2 = np.where(flat, np.nan, 1 - residual / total)
+        backtrack = np.where(flat, np.nan, up / (up + down))
+    return {"r2": r2, "backtrack": backtrack}, flat
+
+
+def isotonic_summary(arrays, lens, boot, from_layer, flat_tol):
+    result = {}
+    for metric in ("nll", "kl"):
+        scores, flat = per_token_isotonic(arrays[f"{lens}_{metric}"][from_layer:], flat_tol)
+        valid = ~flat
+        entry = {"flat_fraction": boot.mean(flat)}
+        for name, values in scores.items():
+            entry[f"{name}_mean"] = boot.ratio(np.where(valid, values, 0.0), valid)
+            entry[f"{name}_quantiles"] = (dict(zip(map(str, QUANTILES), np.quantile(values[valid], QUANTILES).tolist()))
+                                          if valid.any() else None)
+        result[metric] = entry
+    return result
+
+
+def summarize(run_dir, *, from_layer, min_context, eps, n_boot, seed, flat_tol=1e-3):
     manifest, arrays = load_run(run_dir)
     keep = arrays["context"] >= min_context
     arrays = {key: value[..., keep] for key, value in arrays.items()}
     boot = DocBootstrap(arrays["doc"], n_boot, seed)
     n_states = arrays["raw_nll"].shape[0]
     lenses = [lens for lens in ("raw", "tuned") if f"{lens}_nll" in arrays]
-    curves, e3 = {}, {}
+    curves, e3, isotonic = {}, {}, {}
     for lens in lenses:
+        isotonic[lens] = isotonic_summary(arrays, lens, boot, from_layer, flat_tol)
         for metric in LENS_METRICS:
             curves[f"{lens}_{metric}"] = boot.mean(arrays[f"{lens}_{metric}"])
         point, low, high = curves[f"{lens}_nll"]
@@ -109,9 +169,11 @@ def summarize(run_dir, *, from_layer, min_context, eps, n_boot, seed):
         "n_states": n_states,
         "tokens": int(keep.sum()),
         "documents": boot.n_docs,
-        "settings": {"from_layer": from_layer, "min_context": min_context, "eps": eps, "bootstrap": n_boot, "seed": seed},
+        "settings": {"from_layer": from_layer, "min_context": min_context, "eps": eps, "bootstrap": n_boot, "seed": seed,
+                     "flat_tol": flat_tol},
         "curves": {key: [np.asarray(x).tolist() for x in value] for key, value in curves.items()},
         "e3": e3,
+        "isotonic": isotonic,
         "baselines": baselines,
     }
 
@@ -191,3 +253,26 @@ def plot(out_dir, summaries):
     figure.tight_layout()
     figure.savefig(Path(out_dir) / "e3_monotonicity.png", dpi=150)
     plt.close(figure)
+
+    # Per-token isotonic scores: boxes drawn from stored quantiles (5-95% whiskers), one per run and lens.
+    for score, title in (("r2", "Isotonic R² per token (1 = monotone)"),
+                         ("backtrack", "Backtrack share per token (0 = monotone)")):
+        figure, axes = plt.subplots(1, 2, figsize=(10, 4.2), sharey=True)
+        for axis, metric in zip(axes, ("nll", "kl")):
+            boxes, labels = [], []
+            for summary in summaries:
+                for lens, stats in summary["isotonic"].items():
+                    q = stats[metric][f"{score}_quantiles"]
+                    if q is None:
+                        continue
+                    boxes.append({"whislo": q["0.05"], "q1": q["0.25"], "med": q["0.5"], "q3": q["0.75"],
+                                  "whishi": q["0.95"], "label": f"{summary['label']} ({lens})"})
+            if boxes:
+                axis.bxp(boxes, showfliers=False)
+                axis.tick_params(axis="x", labelrotation=60, labelsize=7)
+            axis.set_title(f"{metric.upper()} path", fontsize=10)
+            axis.set_ylabel(title, fontsize=9)
+            axis.grid(alpha=0.3)
+        figure.tight_layout()
+        figure.savefig(Path(out_dir) / f"isotonic_{score}.png", dpi=150)
+        plt.close(figure)

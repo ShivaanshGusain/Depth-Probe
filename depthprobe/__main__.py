@@ -203,7 +203,7 @@ def command_analyze(args):
 
     out = prepare_dir(args.out, args.overwrite)
     summaries = [summarize(run, from_layer=args.from_layer, min_context=args.min_context, eps=args.eps,
-                           n_boot=args.bootstrap, seed=args.seed) for run in args.runs]
+                           n_boot=args.bootstrap, seed=args.seed, flat_tol=args.flat_tol) for run in args.runs]
     write_json(out / "summary.json", {"command": "analyze", "args": vars(args), "summaries": summaries})
     write_csv(out / "curves.csv", summaries)
     plot(out, summaries)
@@ -212,6 +212,11 @@ def command_analyze(args):
         for lens, stats in summary["e3"].items():
             parts = ", ".join(f"{key} {value[0]:.3f} [{value[1]:.3f}, {value[2]:.3f}]"
                               for key, value in stats.items() if key in ("monotone_nll", "monotone_kl", "correct_then_wrong"))
+            log(f"  {lens}: {parts}")
+        for lens, stats in summary["isotonic"].items():
+            parts = ", ".join(f"{metric} isotonic R² {entry['r2_mean'][0]:.3f} [{entry['r2_mean'][1]:.3f}, {entry['r2_mean'][2]:.3f}]"
+                              f" backtrack {entry['backtrack_mean'][0]:.3f} flat {entry['flat_fraction'][0]:.3f}"
+                              for metric, entry in stats.items())
             log(f"  {lens}: {parts}")
     log(f"wrote {out}")
 
@@ -404,6 +409,8 @@ def parser():
     analyze.add_argument("--from-layer", type=int, default=1, help="First state included in E3 (0 = embeddings)")
     analyze.add_argument("--min-context", type=int, default=1, help="Drop tokens with less visible context")
     analyze.add_argument("--eps", type=float, default=1e-3, help="Increase (nats) counted as a reversal")
+    analyze.add_argument("--flat-tol", type=float, default=1e-3,
+                         help="Paths whose range (nats) is below this are 'flat'; isotonic scores skip them")
     analyze.add_argument("--bootstrap", type=int, default=1000)
     analyze.add_argument("--seed", type=int, default=0)
     analyze.add_argument("--out", required=True)

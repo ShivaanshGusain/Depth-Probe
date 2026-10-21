@@ -2,7 +2,47 @@ import json
 
 import numpy as np
 
-from depthprobe.analysis import DocBootstrap, per_token_e3, plot, summarize, write_csv
+import pytest
+
+from depthprobe.analysis import (DocBootstrap, isotonic_nonincreasing, per_token_e3, per_token_isotonic, plot,
+                                 summarize, write_csv)
+
+
+def pava_nonincreasing(values):
+    """Reference pool-adjacent-violators for one sequence."""
+    blocks = []  # [mean, count]
+    for value in values:
+        blocks.append([value, 1])
+        while len(blocks) > 1 and blocks[-2][0] < blocks[-1][0]:
+            mean, count = blocks.pop()
+            previous = blocks[-1]
+            previous[0] = (previous[0] * previous[1] + mean * count) / (previous[1] + count)
+            previous[1] += count
+    return np.concatenate([[mean] * count for mean, count in blocks])
+
+
+def test_isotonic_fit_example():
+    fit = isotonic_nonincreasing(np.array([[5.0], [4.0], [4.5], [3.0], [2.0]]))
+    np.testing.assert_allclose(fit[:, 0], [5.0, 4.25, 4.25, 3.0, 2.0])
+
+
+@pytest.mark.parametrize("steps", [1, 2, 5, 13, 25])
+def test_isotonic_fit_matches_reference(steps):
+    values = np.random.default_rng(steps).normal(size=(steps, 300)).cumsum(0)
+    fit = isotonic_nonincreasing(values, chunk=64)
+    for column in range(values.shape[1]):
+        np.testing.assert_allclose(fit[:, column], pava_nonincreasing(values[:, column]), atol=1e-10)
+
+
+def test_isotonic_scores():
+    # One row per token, transposed to [states, tokens]: monotone, rising, down then up, flat.
+    paths = np.array([[3.0, 2.0, 1.0], [1.0, 2.0, 3.0], [3.0, 1.0, 2.0], [1.0, 1.0, 1.0]]).T
+    scores, flat = per_token_isotonic(paths, flat_tol=1e-3)
+    assert flat.tolist() == [False, False, False, True]
+    # [3, 1, 2] fits as [3, 1.5, 1.5]: residual 0.5 of total 2.
+    np.testing.assert_allclose(scores["r2"][:3], [1.0, 0.0, 0.75])
+    np.testing.assert_allclose(scores["backtrack"][:3], [0.0, 1.0, 1 / 3])
+    assert np.isnan(scores["r2"][3]) and np.isnan(scores["backtrack"][3])
 
 
 def test_bootstrap_point_is_token_weighted_mean():
@@ -48,7 +88,13 @@ def test_summarize_and_plot(tmp_path):
     assert summary["tokens"] == 40 and summary["documents"] == 4
     assert len(summary["curves"]["raw_nll"][0]) == states
     assert len(summary["curves"]["tuned_gain_kl"][0]) == states - 1
+    for lens in ("raw", "tuned"):
+        for metric in ("nll", "kl"):
+            entry = summary["isotonic"][lens][metric]
+            assert 0 <= entry["r2_mean"][0] <= 1 and 0 <= entry["backtrack_mean"][0] <= 1
+            assert set(entry["r2_quantiles"]) == {"0.05", "0.25", "0.5", "0.75", "0.95"}
     json.dumps(summary)
     write_csv(tmp_path / "curves.csv", [summary])
     plot(tmp_path, [summary])
     assert (tmp_path / "nll.png").exists() and (tmp_path / "e3_monotonicity.png").exists()
+    assert (tmp_path / "isotonic_r2.png").exists() and (tmp_path / "isotonic_backtrack.png").exists()
