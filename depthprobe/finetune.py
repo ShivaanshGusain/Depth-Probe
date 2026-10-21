@@ -341,12 +341,14 @@ def cache_training(model, corpus, windows, path, *, first, last, batch_size, bos
 def train_segment(segment, readout, cache_path, meta, *, device, epochs, lr, strength,
                   regularizer, chunk, seed, log=print, batch_size=None, workers=0, progress=True,
                   amp="none", lr_schedule="none", warmup_fraction=0.05, log_path=None, log_every=1,
-                  l2_space="residual", rms_eps=1e-6, kl_strength=None):
+                  l2_space="residual", rms_eps=1e-6, kl_strength=None, train_head=False):
     kl_strength = strength if kl_strength is None else kl_strength
     if epochs < 1 or lr <= 0 or strength < 0 or kl_strength < 0 or chunk < 1:
         raise ValueError("Need epochs >= 1, lr > 0, nonnegative strengths, chunk >= 1")
     if regularizer not in ("l2", "kl", "both", "none"):
         raise ValueError("Unknown regularizer")
+    if train_head and regularizer != "none":
+        raise ValueError("Trainable head requires regularizer=none; reference readout must stay frozen otherwise")
     if l2_space not in ("residual", "rms") or rms_eps <= 0:
         raise ValueError("Unknown L2 space")
     if workers < 0 or log_every < 1 or not 0 <= warmup_fraction < 1:
@@ -360,6 +362,8 @@ def train_segment(segment, readout, cache_path, meta, *, device, epochs, lr, str
         raise ValueError("Need a positive batch size and nonempty training cache")
     segment.to(device).eval()
     readout.to(device).eval().requires_grad_(False)
+    if train_head:
+        readout.head.requires_grad_(True)
     stats = torch.load(cache_path / "activation_stats.pt", weights_only=True)
     if regularizer in ("l2", "both") and l2_space == "rms":
         if "rms" not in stats or stats.get("rms_eps") != rms_eps:
@@ -367,6 +371,7 @@ def train_segment(segment, readout, cache_path, meta, *, device, epochs, lr, str
         stats = stats["rms"]
     scale = stats["scale"].to(device)
     parameters = [p for p in segment.parameters() if p.requires_grad]
+    parameters += [p for p in readout.parameters() if p.requires_grad]
     cuda = torch.device(device).type == "cuda"
     optimizer = torch.optim.AdamW(parameters, lr=lr, weight_decay=0.0, fused=cuda)
     rng = np.random.default_rng(seed)
@@ -464,17 +469,27 @@ def train_segment(segment, readout, cache_path, meta, *, device, epochs, lr, str
 
 @torch.no_grad()
 def evaluate_full(model, corpus, windows, *, batch_size, bos_id, device, chunk,
-                  progress=True, amp="none", description="Evaluate full model"):
-    """Native full-model metrics, including per-token data for paired comparisons."""
+                  progress=True, amp="none", description="Evaluate full model", last_block=None):
+    """Held-out metrics; optionally omit blocks after a 1-based inclusive exit.
+
+    The partial path retains the current final norm/head and prefix positions.
+    A shallow backbone shell avoids changing the original model's block list.
+    """
     model.eval()
     parts = find_parts(model)
+    backbone = parts.container
+    if last_block is not None:
+        validate_range(model, 1, last_block)
+        backbone = copy.copy(parts.container)
+        backbone._modules = parts.container._modules.copy()
+        setattr(backbone, parts.blocks_attr, nn.ModuleList(list(parts.blocks)[:last_block]))
     arrays = {key: [] for key in ("nll", "correct", "prediction", "target_id", "target_index", "doc")}
     count, nll_sum, correct = 0, 0.0, 0
     with tqdm(total=token_count(windows), desc=description, unit="tok", unit_scale=True,
               disable=not progress, dynamic_ncols=True) as bar:
         for batch in iterate_batches(corpus.ids, windows, batch_size, bos_id):
             with autocast(device, amp):
-                output = parts.container(input_ids=torch.from_numpy(batch.inputs).to(device),
+                output = backbone(input_ids=torch.from_numpy(batch.inputs).to(device),
                                          use_cache=False, return_dict=True)
             for start in range(0, len(batch.targets), chunk):
                 part = slice(start, start + chunk)

@@ -242,6 +242,13 @@ def command_finetune_segment(args):
     inference_args.device = args.inference_device
     model, tokenizer, readout, bos_id, inference_device, meta = setup(inference_args)
     validate_range(model, args.first_block, args.last_block)
+    partial_exit = args.last_block if args.partial_exit_block is None else args.partial_exit_block
+    validate_range(model, 1, partial_exit)
+    if args.train_head:
+        if args.regularizer != "none":
+            sys.exit("--train-head requires --regularizer none")
+        if find_parts(model).head.weight is model.get_input_embeddings().weight:
+            sys.exit("--train-head requires an untied output head to keep input embeddings frozen")
     device = resolve_device(args.device)
     if args.amp != "none" and (torch.device(device).type != "cuda" or not torch.cuda.is_bf16_supported()):
         sys.exit("--amp bfloat16 requires a BF16-capable CUDA device")
@@ -258,6 +265,10 @@ def command_finetune_segment(args):
     log("Evaluating untouched full model")
     before, before_arrays = evaluate_full(model, evaluation, eval_windows, description="Full model BEFORE", **eval_kwargs)
     np.savez(out / "before.npz", **before_arrays)
+    partial_before, partial_before_arrays = evaluate_full(
+        model, evaluation, eval_windows, last_block=partial_exit,
+        description="Partial model BEFORE", **eval_kwargs)
+    np.savez(out / "partial_before.npz", **partial_before_arrays)
     train = load_corpus(tokenizer, args.train_data or args.data, args.train_split,
                         max_tokens=args.train_tokens, joiner=args.joiner, shuffle_seed=args.seed)
     train_windows = windows_for(train, args, bos_id, args.ctx - (bos_id is not None))
@@ -286,14 +297,18 @@ def command_finetune_segment(args):
                             workers=args.workers, progress=progress, amp=args.amp,
                             lr_schedule=args.lr_schedule, warmup_fraction=args.warmup_fraction,
                             log_path=out / "training.csv", log_every=args.log_every,
-                            l2_space=args.l2_space, rms_eps=args.rms_eps, kl_strength=kl_strength)
-    # Selected modules are shared by reference with the full model, not copied back.
+                            l2_space=args.l2_space, rms_eps=args.rms_eps, kl_strength=kl_strength,
+                            train_head=args.train_head)
+    # Blocks are shared with the full model; the optional trained readout head is copied back.
     segment.cpu()
     readout.cpu()
+    if args.train_head:
+        find_parts(model).head.load_state_dict(readout.head.state_dict())
     blocks = torch.nn.ModuleList(list(find_parts(model).blocks)[args.first_block - 1:args.last_block])
     torch.save({"state_dict": blocks.state_dict(), "first_block": args.first_block,
                 "last_block": args.last_block, "variant": meta["variant"], "permutation": meta["permutation"],
-                "model": model_fingerprint(args.model)}, out / "segment.pt")
+                "model": model_fingerprint(args.model), "train_head": args.train_head,
+                "head_state_dict": readout.head.state_dict() if args.train_head else None}, out / "segment.pt")
     del segment, blocks
     model.requires_grad_(False).to(inference_device)
     log("Evaluating full model with original suffix restored")
@@ -301,12 +316,26 @@ def command_finetune_segment(args):
     if not np.array_equal(before_arrays["target_index"], after_arrays["target_index"]):
         raise RuntimeError("Before/after evaluation tokens do not align")
     np.savez(out / "after.npz", **after_arrays)
+    partial_after, partial_after_arrays = evaluate_full(
+        model, evaluation, eval_windows, last_block=partial_exit,
+        description="Partial model AFTER", **eval_kwargs)
+    for key in ("target_index", "target_id", "doc"):
+        if not np.array_equal(partial_before_arrays[key], partial_after_arrays[key]):
+            raise RuntimeError(f"Partial before/after {key} do not align")
+        if not np.array_equal(before_arrays[key], partial_before_arrays[key]):
+            raise RuntimeError(f"Full/partial evaluation {key} do not align")
+    np.savez(out / "partial_after.npz", **partial_after_arrays)
+    partial_comparison = {"before": partial_before, "after": partial_after,
+                          "delta_after_minus_before": {
+                              key: partial_after[key] - partial_before[key]
+                              for key in ("cross_entropy", "perplexity", "accuracy")}}
     comparison = {"before": before, "after": after,
                   "delta_after_minus_before": {key: after[key] - before[key]
                                                for key in ("cross_entropy", "perplexity", "accuracy")},
                   "prediction_changed_fraction": float((before_arrays["prediction"] != after_arrays["prediction"]).mean())}
     write_json(out / "summary.json", manifest(args, meta, training_device=device,
-                                               cache=cache_meta, history=history, evaluation=comparison))
+                                               cache=cache_meta, history=history, evaluation=comparison,
+                                               partial_evaluation=partial_comparison))
     if args.save_full_model:
         model.cpu().save_pretrained(out / "model")
         tokenizer.save_pretrained(out / "model")
@@ -386,11 +415,15 @@ def parser():
     add_data_args(fine, "test")
     fine.add_argument("--first-block", required=True, type=int, help="First trained block, 1-based, inclusive")
     fine.add_argument("--last-block", required=True, type=int, help="Last trained block, 1-based, inclusive")
+    fine.add_argument("--partial-exit-block", type=int,
+                      help="Held-out partial-model exit (default: last trained block)")
     fine.add_argument("--train-data", help="Separate local training corpus (default: --data directory)")
     fine.add_argument("--train-split", default="train")
     fine.add_argument("--train-tokens", type=int, default=200_000)
     fine.add_argument("--inference-device", default="auto", help="Full-model cache/evaluation device; cpu saves GPU memory")
     fine.add_argument("--epochs", type=int, default=1)
+    fine.add_argument("--train-head", action="store_true",
+                      help="Also train the untied prediction head; requires --regularizer none")
     fine.add_argument("--lr", type=float, default=1e-5)
     fine.add_argument("--regularizer", choices=["l2", "kl", "both", "none"], default="l2")
     fine.add_argument("--reg-strength", type=float, default=1.0, help="L2 weight (and KL weight unless --kl-strength is set)")

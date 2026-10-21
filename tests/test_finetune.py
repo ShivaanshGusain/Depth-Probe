@@ -99,6 +99,37 @@ def test_invalid_range(model):
             validate_range(model, first, last)
 
 
+def test_trainable_prediction_head_updates_with_segment_only(model, tmp_path):
+    corpus = Corpus(np.arange(35, dtype=np.int64) % VOCAB, np.zeros(35, dtype=np.int32), 1)
+    windows = make_windows(35, 12, 12)
+    meta = cache_training(model, corpus, windows, tmp_path, first=3, last=3,
+                          batch_size=2, bos_id=None, device="cpu", chunk=5, progress=False, log=lambda _: None)
+    readout = Readout(model)
+    original_head = {k: v.clone() for k, v in readout.head.state_dict().items()}
+    original_norm = {k: v.clone() for k, v in readout.norm.state_dict().items()}
+    original_model = {k: v.clone() for k, v in model.state_dict().items()}
+    segment = make_segment(model, 3, 3)
+    train_segment(segment, readout, tmp_path, meta, device="cpu", epochs=1, lr=1e-3,
+                  strength=0, regularizer="none", chunk=5, seed=0, train_head=True,
+                  progress=False, log=lambda _: None)
+    assert any(not torch.equal(v, original_head[k]) for k, v in readout.head.state_dict().items())
+    assert all(torch.equal(v, original_norm[k]) for k, v in readout.norm.state_dict().items())
+    selected = {id(p) for p in find_parts(model).blocks[2].parameters()}
+    for name, p in model.named_parameters():
+        if id(p) not in selected:
+            torch.testing.assert_close(p, original_model[name], rtol=0, atol=0)
+    assert any(not torch.equal(p, original_model[name]) for name, p in model.named_parameters() if id(p) in selected)
+    find_parts(model).head.load_state_dict(readout.head.state_dict())
+    torch.testing.assert_close(find_parts(model).head.weight, readout.head.weight)
+
+
+def test_trainable_head_rejects_moving_reference(model, tmp_path):
+    with pytest.raises(ValueError, match="reference readout"):
+        train_segment(make_segment(model, 3, 3), Readout(model), tmp_path, {},
+                      device="cpu", epochs=1, lr=1e-3, strength=1, regularizer="kl",
+                      chunk=5, seed=0, train_head=True)
+
+
 @pytest.mark.parametrize("bos_id", [None, 0])
 def test_chunked_evaluation_matches_native_full_model(model, bos_id):
     corpus = Corpus(np.arange(35, dtype=np.int64) % VOCAB, np.zeros(35, dtype=np.int32), 1)
@@ -119,6 +150,30 @@ def test_chunked_evaluation_matches_native_full_model(model, bos_id):
     np.testing.assert_array_equal(arrays["target_index"], np.concatenate(expected_indices))
     assert metrics["cross_entropy"] == pytest.approx(np.concatenate(expected_nll).mean(), rel=1e-6)
     assert len(np.unique(arrays["target_index"])) == metrics["tokens"] == 34
+
+
+@pytest.mark.parametrize("last_block", [1, 2, 3])
+def test_partial_evaluation_matches_exit_readout_without_mutating_model(model, last_block):
+    corpus = Corpus(np.arange(35, dtype=np.int64) % VOCAB, np.zeros(35, dtype=np.int32), 1)
+    windows = make_windows(35, 12, 6)
+    blocks = list(find_parts(model).blocks)
+    kwargs = dict(batch_size=3, bos_id=None, device="cpu", chunk=5, progress=False)
+    full_before, full_arrays = evaluate_full(model, corpus, windows, **kwargs)
+    metrics, arrays = evaluate_full(model, corpus, windows, last_block=last_block, **kwargs)
+    expected = []
+    readout = Readout(model)
+    with torch.no_grad():
+        for batch in iterate_batches(corpus.ids, windows, 3, None):
+            states, _ = forward_states(model, torch.from_numpy(batch.inputs))
+            logits = readout(states[last_block][batch.rows, batch.positions])
+            expected.append(torch.nn.functional.cross_entropy(
+                logits, torch.from_numpy(corpus.ids[batch.targets]), reduction="none").numpy())
+    np.testing.assert_allclose(arrays["nll"], np.concatenate(expected), rtol=1e-6, atol=1e-6)
+    np.testing.assert_array_equal(arrays["target_index"], full_arrays["target_index"])
+    assert metrics["tokens"] == full_before["tokens"]
+    assert list(find_parts(model).blocks) == blocks
+    full_after, _ = evaluate_full(model, corpus, windows, **kwargs)
+    assert full_before == full_after
 
 
 def test_cache_rebatching_preserves_token_reference_alignment(model, tmp_path):

@@ -84,6 +84,20 @@ def report(run, *, out=None, show=False):
     lines += ["", "Accuracy is a fraction; changes are absolute, not relative.",
               "Lower CE/perplexity and higher accuracy indicate improvement.",
               "Training curves use the truncated path; the table uses the restored full model.", ""]
+    if "partial_evaluation" in summary:
+        partial = summary["partial_evaluation"]
+        exit_block = summary["args"].get("partial_exit_block") or last
+        head_label = "final norm/head" if summary["args"].get("train_head") else "original final norm/head"
+        lines += [f"## Partial model: blocks 1–{exit_block} → {head_label}", "",
+                  "Same held-out validation/evaluation tokens as the full model (not training averages).", "",
+                  "| Partial-model metric | Before | After | Change (after − before) |",
+                  "|---|---:|---:|---:|"]
+        for key in ("cross_entropy", "perplexity", "accuracy"):
+            values = [partial[phase][key] for phase in ("before", "after", "delta_after_minus_before")]
+            lines.append(f"| {key} | {' | '.join(f'{value:.6f}' for value in values)} |")
+        lines.append("")
+    if summary["args"].get("train_head"):
+        lines += ["Prediction head is trainable; final normalization remains frozen.", ""]
     if regularizer in ("l2", "both"):
         space = summary["args"].get("l2_space", "residual")
         lines += [f"L2 space: {space}; strength: {summary['args'].get('reg_strength', 1.0)}."]

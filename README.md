@@ -125,6 +125,16 @@ python -m depthprobe analyze    runs/measure [more runs ...] --out runs/report
 
 ## Local middle-block fine-tuning
 
+For the memory-constrained staged-training goal and the Pythia/GPT-NeoX pilot,
+see [PYTHIA_EXPERIMENT_SUMMARY.md](PYTHIA_EXPERIMENT_SUMMARY.md).
+`scripts/train_pythia_410m_4090.sh` trains two late blocks;
+`scripts/compare_pythia_last_head_4090.sh` compares one-epoch last-block/head
+adaptation from original versus staged weights. Both default to archive storage.
+`--train-head` enables an untied trainable prediction head with `--regularizer none`;
+the final norm stays frozen. `--partial-exit-block` selects the held-out partial
+readout depth (default: last trained block); reports include before/after partial
+metrics on the same evaluation tokens as the full model.
+
 ### Ready-to-run RTX 4090 pilot
 
 ```bash
