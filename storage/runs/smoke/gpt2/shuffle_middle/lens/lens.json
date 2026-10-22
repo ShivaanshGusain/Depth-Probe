@@ -1,0 +1,194 @@
+{
+  "tool": "depthprobe",
+  "version": "0.1.0",
+  "command": "train-lens",
+  "args": {
+    "command": "train-lens",
+    "model": "/workspace/storage/models/gpt2",
+    "model_revision": null,
+    "dtype": "float32",
+    "device": "auto",
+    "attn": null,
+    "init": "pretrained",
+    "init_seed": 0,
+    "shuffle": "middle",
+    "shuffle_seed": 0,
+    "data": "/workspace/storage/data/wikitext/wikitext-103-raw-v1",
+    "split": "train",
+    "joiner": "",
+    "ctx": 1024,
+    "stride": 512,
+    "prepend_bos": false,
+    "batch_size": 8,
+    "chunk": 1024,
+    "train_tokens": 200000,
+    "val_split": "validation",
+    "val_tokens": 200000,
+    "lr": 0.001,
+    "warmup": 0.1,
+    "seed": 0,
+    "out": "/workspace/storage/runs/smoke/gpt2/shuffle_middle/lens",
+    "overwrite": false,
+    "run": "<function command_train_lens at 0xf176712c14e0>"
+  },
+  "environment": {
+    "python": "3.12.3",
+    "platform": "Linux-6.17.0-1026-nvidia-aarch64-with-glibc2.39",
+    "torch": "2.8.0a0+34c6371d24.nv25.08",
+    "torch_cuda": "13.0",
+    "transformers": "5.20.2",
+    "numpy": "1.26.4",
+    "device": "NVIDIA GB10",
+    "tf32_matmul": false,
+    "source_sha256": "da18d4ba87b99acdda99f97333491ddeb9e0d40433e0899e304b3c670cb225af",
+    "created_utc": "2026-10-21T19:07:51Z"
+  },
+  "model": {
+    "path": "/workspace/storage/models/gpt2",
+    "files": [
+      {
+        "name": "config.json",
+        "bytes": 665
+      },
+      {
+        "name": "generation_config.json",
+        "bytes": 124
+      },
+      {
+        "name": "merges.txt",
+        "bytes": 456318
+      },
+      {
+        "name": "model.safetensors",
+        "bytes": 548105171
+      },
+      {
+        "name": "onnx/merges.txt",
+        "bytes": 456318
+      },
+      {
+        "name": "tokenizer.json",
+        "bytes": 1355256
+      },
+      {
+        "name": "tokenizer_config.json",
+        "bytes": 26
+      },
+      {
+        "name": "vocab.json",
+        "bytes": 1042301
+      }
+    ],
+    "config_sha256": "0daed7749b4f02b8f76240d5444551d7b08712dab4d0adb8239c56ba823bb7b4"
+  },
+  "family": "gpt2",
+  "permutation": [
+    0,
+    5,
+    7,
+    3,
+    8,
+    4,
+    6,
+    10,
+    1,
+    9,
+    2,
+    11
+  ],
+  "variant": {
+    "init": "pretrained",
+    "init_seed": null,
+    "shuffle": "middle",
+    "shuffle_seed": 0
+  },
+  "bos_id": null,
+  "device": "cuda",
+  "lens": {
+    "n_states": 13,
+    "width": 768,
+    "variant": {
+      "init": "pretrained",
+      "init_seed": null,
+      "shuffle": "middle",
+      "shuffle_seed": 0
+    },
+    "permutation": [
+      0,
+      5,
+      7,
+      3,
+      8,
+      4,
+      6,
+      10,
+      1,
+      9,
+      2,
+      11
+    ],
+    "config_sha256": "0daed7749b4f02b8f76240d5444551d7b08712dab4d0adb8239c56ba823bb7b4",
+    "train_tokens": 200001,
+    "validation": {
+      "tokens": 199805,
+      "raw_kl": [
+        50.16261294214985,
+        6.909111439806154,
+        6.17571621283388,
+        4.930305076624514,
+        3.1068343035216173,
+        4.032759221735333,
+        2.972335764186488,
+        3.502057813252687,
+        1.6157724570029999,
+        1.128241894367516,
+        1.251294820188942,
+        0.8367789863427388,
+        0.0
+      ],
+      "tuned_kl": [
+        14.032170929644685,
+        1.3632422666787618,
+        1.3524662999060804,
+        1.2700506008189527,
+        0.9163782585359593,
+        1.0832863673245965,
+        0.8912923364440486,
+        0.9643388564837044,
+        0.4279262749014762,
+        0.34809150897222446,
+        0.3400499792870559,
+        0.2923524629705491,
+        0.0
+      ]
+    }
+  },
+  "history": [
+    7.156291961669922,
+    6.655866622924805,
+    5.967947483062744,
+    5.5820136070251465,
+    4.9637932777404785,
+    4.616055011749268,
+    4.315096855163574,
+    3.9636459350585938,
+    3.5987637042999268,
+    3.4866206645965576,
+    3.2228803634643555,
+    3.220698118209839,
+    2.9719393253326416,
+    2.6079652309417725,
+    2.731576681137085,
+    2.4317190647125244,
+    2.389164924621582,
+    2.3106091022491455,
+    2.2702858448028564,
+    2.167229652404785,
+    2.1596968173980713,
+    2.0475785732269287,
+    1.9784218072891235,
+    2.0654428005218506,
+    1.950728416442871,
+    1.8484889268875122
+  ]
+}

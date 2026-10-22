@@ -1,0 +1,176 @@
+{
+  "tool": "depthprobe",
+  "version": "0.1.0",
+  "command": "measure",
+  "args": {
+    "command": "measure",
+    "model": "/workspace/storage/models/gpt2",
+    "model_revision": null,
+    "dtype": "float32",
+    "device": "auto",
+    "attn": null,
+    "init": "pretrained",
+    "init_seed": 0,
+    "shuffle": "middle",
+    "shuffle_seed": 0,
+    "data": "/workspace/storage/data/wikitext/wikitext-103-raw-v1",
+    "split": "test",
+    "max_tokens": null,
+    "joiner": "",
+    "ctx": 1024,
+    "stride": 512,
+    "prepend_bos": false,
+    "batch_size": 8,
+    "chunk": 1024,
+    "lens": "/workspace/storage/runs/gpt2/shuffle_middle/lens/lens.pt",
+    "unigram": "/workspace/storage/runs/gpt2/unigram.npy",
+    "max_final_nll_error": 0.1,
+    "label": "gpt2-shuffle_middle",
+    "out": "/workspace/storage/runs/gpt2/shuffle_middle/measure",
+    "overwrite": false,
+    "run": "<function command_measure at 0xef5df8f51760>"
+  },
+  "environment": {
+    "python": "3.12.3",
+    "platform": "Linux-6.17.0-1026-nvidia-aarch64-with-glibc2.39",
+    "torch": "2.8.0a0+34c6371d24.nv25.08",
+    "torch_cuda": "13.0",
+    "transformers": "5.20.2",
+    "numpy": "1.26.4",
+    "device": "NVIDIA GB10",
+    "tf32_matmul": false,
+    "source_sha256": "6e41f851f164bb8b3b0ef8e298ed58ce661b372ccd72d6d299a0579221eda1ef",
+    "created_utc": "2026-10-21T23:00:53Z"
+  },
+  "model": {
+    "path": "/workspace/storage/models/gpt2",
+    "files": [
+      {
+        "name": "config.json",
+        "bytes": 665
+      },
+      {
+        "name": "generation_config.json",
+        "bytes": 124
+      },
+      {
+        "name": "merges.txt",
+        "bytes": 456318
+      },
+      {
+        "name": "model.safetensors",
+        "bytes": 548105171
+      },
+      {
+        "name": "onnx/merges.txt",
+        "bytes": 456318
+      },
+      {
+        "name": "tokenizer.json",
+        "bytes": 1355256
+      },
+      {
+        "name": "tokenizer_config.json",
+        "bytes": 26
+      },
+      {
+        "name": "vocab.json",
+        "bytes": 1042301
+      }
+    ],
+    "config_sha256": "0daed7749b4f02b8f76240d5444551d7b08712dab4d0adb8239c56ba823bb7b4"
+  },
+  "family": "gpt2",
+  "permutation": [
+    0,
+    5,
+    7,
+    3,
+    8,
+    4,
+    6,
+    10,
+    1,
+    9,
+    2,
+    11
+  ],
+  "variant": {
+    "init": "pretrained",
+    "init_seed": null,
+    "shuffle": "middle",
+    "shuffle_seed": 0
+  },
+  "bos_id": null,
+  "device": "cuda",
+  "stats": {
+    "scored_tokens": 283286,
+    "n_states": 13,
+    "native_ppl": 2865.3458903611004,
+    "max_abs_final_nll_error": 0.0
+  },
+  "lens": {
+    "n_states": 13,
+    "width": 768,
+    "variant": {
+      "init": "pretrained",
+      "init_seed": null,
+      "shuffle": "middle",
+      "shuffle_seed": 0
+    },
+    "permutation": [
+      0,
+      5,
+      7,
+      3,
+      8,
+      4,
+      6,
+      10,
+      1,
+      9,
+      2,
+      11
+    ],
+    "config_sha256": "0daed7749b4f02b8f76240d5444551d7b08712dab4d0adb8239c56ba823bb7b4",
+    "train_tokens": 4000001,
+    "validation": {
+      "tokens": 199805,
+      "raw_kl": [
+        50.16261294214985,
+        6.909111439806154,
+        6.17571621283388,
+        4.930305076624514,
+        3.1068343035216173,
+        4.032759221735333,
+        2.972335764186488,
+        3.502057813252687,
+        1.6157724570029999,
+        1.128241894367516,
+        1.251294820188942,
+        0.8367789863427388,
+        0.0
+      ],
+      "tuned_kl": [
+        1.3561529221642958,
+        0.4676817428731294,
+        0.4152084599928778,
+        0.36354117750157966,
+        0.33625925345265834,
+        0.319751973399284,
+        0.29807738898881,
+        0.2833964143482278,
+        0.20380015401032853,
+        0.18401305187047118,
+        0.15686454506614408,
+        0.1417980831099751,
+        0.0
+      ]
+    }
+  },
+  "corpus": {
+    "tokens": 283287,
+    "documents": 62,
+    "windows": 553
+  }
+}

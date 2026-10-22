@@ -1,0 +1,157 @@
+nohup: ignoring input
+Loading weights:   0%|          | 0/148 [00:00<?, ?it/s]Loading weights: 100%|██████████| 148/148 [00:00<00:00, 9640.13it/s]
+[transformers] Token indices sequence length is longer than the specified maximum sequence length for this model (1266 > 1024). Running this sequence through the model will result in indexing errors
+[20:27:44] E0 check: 283287 tokens, 62 documents, 553 windows
+[transformers] `loss_type=None` was set in the config but it is unrecognized. Using the default loss: `ForCausalLMLoss`.
+[20:27:45] checked 4607 tokens: running native PPL 26.1822
+[20:27:45] checked 8703 tokens: running native PPL 27.3804
+[20:27:46] checked 12799 tokens: running native PPL 25.1647
+[20:27:46] checked 16895 tokens: running native PPL 25.6280
+[20:27:47] checked 20991 tokens: running native PPL 25.6340
+[20:27:47] checked 25087 tokens: running native PPL 25.6380
+[20:27:47] checked 29183 tokens: running native PPL 25.6854
+[20:27:48] checked 33279 tokens: running native PPL 26.1982
+[20:27:48] checked 37375 tokens: running native PPL 25.7976
+[20:27:49] checked 41471 tokens: running native PPL 26.1282
+[20:27:49] checked 45567 tokens: running native PPL 26.4385
+[20:27:49] checked 49663 tokens: running native PPL 26.8961
+[20:27:50] checked 53759 tokens: running native PPL 27.1684
+[20:27:50] checked 57855 tokens: running native PPL 26.9026
+[20:27:51] checked 61951 tokens: running native PPL 26.1905
+[20:27:51] checked 66047 tokens: running native PPL 25.6722
+[20:27:51] checked 70143 tokens: running native PPL 25.5858
+[20:27:52] checked 74239 tokens: running native PPL 24.7669
+[20:27:52] checked 78335 tokens: running native PPL 24.0166
+[20:27:53] checked 82431 tokens: running native PPL 24.2946
+[20:27:53] checked 86527 tokens: running native PPL 24.9245
+[20:27:54] checked 90623 tokens: running native PPL 25.4570
+[20:27:54] checked 94719 tokens: running native PPL 25.5502
+[20:27:54] checked 98815 tokens: running native PPL 25.4245
+[20:27:55] checked 102911 tokens: running native PPL 25.1721
+[20:27:55] checked 107007 tokens: running native PPL 24.9311
+[20:27:56] checked 111103 tokens: running native PPL 24.5844
+[20:27:56] checked 115199 tokens: running native PPL 24.4498
+[20:27:56] checked 119295 tokens: running native PPL 24.6684
+[20:27:57] checked 123391 tokens: running native PPL 24.8265
+[20:27:57] checked 127487 tokens: running native PPL 24.6233
+[20:27:58] checked 131583 tokens: running native PPL 24.4002
+[20:27:58] checked 135679 tokens: running native PPL 24.1592
+[20:27:58] checked 139775 tokens: running native PPL 24.1262
+[20:27:59] checked 143871 tokens: running native PPL 24.2576
+[20:27:59] checked 147967 tokens: running native PPL 24.2646
+[20:28:00] checked 152063 tokens: running native PPL 24.1900
+[20:28:00] checked 156159 tokens: running native PPL 24.2618
+[20:28:00] checked 160255 tokens: running native PPL 24.0839
+[20:28:01] checked 164351 tokens: running native PPL 23.8949
+[20:28:01] checked 168447 tokens: running native PPL 23.7928
+[20:28:02] checked 172543 tokens: running native PPL 23.7925
+[20:28:02] checked 176639 tokens: running native PPL 23.9478
+[20:28:03] checked 180735 tokens: running native PPL 24.2568
+[20:28:03] checked 184831 tokens: running native PPL 24.4630
+[20:28:03] checked 188927 tokens: running native PPL 24.5948
+[20:28:04] checked 193023 tokens: running native PPL 24.6634
+[20:28:04] checked 197119 tokens: running native PPL 24.6677
+[20:28:05] checked 201215 tokens: running native PPL 24.6893
+[20:28:05] checked 205311 tokens: running native PPL 24.7043
+[20:28:05] checked 209407 tokens: running native PPL 24.8260
+[20:28:06] checked 213503 tokens: running native PPL 24.8377
+[20:28:06] checked 217599 tokens: running native PPL 24.7969
+[20:28:07] checked 221695 tokens: running native PPL 24.7974
+[20:28:07] checked 225791 tokens: running native PPL 24.8380
+[20:28:07] checked 229887 tokens: running native PPL 24.8318
+[20:28:08] checked 233983 tokens: running native PPL 24.8206
+[20:28:08] checked 238079 tokens: running native PPL 24.7786
+[20:28:09] checked 242175 tokens: running native PPL 24.7846
+[20:28:09] checked 246271 tokens: running native PPL 24.7901
+[20:28:10] checked 250367 tokens: running native PPL 24.8022
+[20:28:10] checked 254463 tokens: running native PPL 24.7918
+[20:28:10] checked 258559 tokens: running native PPL 24.7802
+[20:28:11] checked 262655 tokens: running native PPL 24.8036
+[20:28:11] checked 266751 tokens: running native PPL 24.7376
+[20:28:12] checked 270847 tokens: running native PPL 24.6109
+[20:28:12] checked 274943 tokens: running native PPL 24.7239
+[20:28:12] checked 279039 tokens: running native PPL 24.7396
+[20:28:13] checked 283135 tokens: running native PPL 24.8408
+[20:28:13] checked 283286 tokens: running native PPL 24.8452
+[20:28:13] {
+  "scored_tokens": 283286,
+  "native_ppl": 24.845247445070736,
+  "readout_ppl": 24.845247445070736,
+  "max_abs_final_nll_error": 0.0,
+  "max_abs_final_logit_error": 0.0,
+  "max_abs_library_loss_gap": 2.980232238769531e-07
+}
+[transformers] Token indices sequence length is longer than the specified maximum sequence length for this model (3562 > 1024). Running this sequence through the model will result in indexing errors
+[20:28:22] unigram from 4000001 tokens -> /workspace/storage/runs/gpt2/unigram.npy
+Loading weights:   0%|          | 0/148 [00:00<?, ?it/s]Loading weights: 100%|██████████| 148/148 [00:00<00:00, 12536.24it/s]
+[transformers] Token indices sequence length is longer than the specified maximum sequence length for this model (3562 > 1024). Running this sequence through the model will result in indexing errors
+[20:28:34] training lens on 4000001 tokens (3907 windows)
+[20:28:39] lens step 1/490: mean KL 8.7764 nats
+[20:29:54] lens step 21/490: mean KL 5.5210 nats
+[20:31:10] lens step 41/490: mean KL 2.8276 nats
+[20:32:26] lens step 61/490: mean KL 2.1657 nats
+[20:33:42] lens step 81/490: mean KL 2.0016 nats
+[20:34:58] lens step 101/490: mean KL 1.7377 nats
+[20:36:14] lens step 121/490: mean KL 1.6875 nats
+[20:37:30] lens step 141/490: mean KL 1.5746 nats
+[20:38:46] lens step 161/490: mean KL 1.6343 nats
+[20:40:02] lens step 181/490: mean KL 1.4613 nats
+[20:41:18] lens step 201/490: mean KL 1.4897 nats
+[20:42:34] lens step 221/490: mean KL 1.6117 nats
+[20:43:50] lens step 241/490: mean KL 1.5599 nats
+[20:45:06] lens step 261/490: mean KL 1.4271 nats
+[20:46:22] lens step 281/490: mean KL 1.5394 nats
+[20:47:38] lens step 301/490: mean KL 1.4714 nats
+[20:48:54] lens step 321/490: mean KL 1.3931 nats
+[20:50:10] lens step 341/490: mean KL 1.4227 nats
+[20:51:26] lens step 361/490: mean KL 1.4168 nats
+[20:52:42] lens step 381/490: mean KL 1.3952 nats
+[20:53:58] lens step 401/490: mean KL 1.4751 nats
+[20:55:14] lens step 421/490: mean KL 1.4471 nats
+[20:56:30] lens step 441/490: mean KL 1.4565 nats
+[20:57:46] lens step 461/490: mean KL 1.4726 nats
+[20:59:02] lens step 481/490: mean KL 1.4508 nats
+[20:59:30] lens step 490/490: mean KL 1.3315 nats
+[21:01:37] state   0: validation KL raw 50.4730  tuned 4.0140
+[21:01:37] state   1: validation KL raw 7.8950  tuned 2.1275
+[21:01:37] state   2: validation KL raw 6.6777  tuned 1.9458
+[21:01:37] state   3: validation KL raw 6.3360  tuned 1.7683
+[21:01:37] state   4: validation KL raw 6.1423  tuned 1.6174
+[21:01:37] state   5: validation KL raw 5.9839  tuned 1.5075
+[21:01:37] state   6: validation KL raw 5.3440  tuned 1.2037
+[21:01:37] state   7: validation KL raw 4.9118  tuned 0.9716
+[21:01:37] state   8: validation KL raw 4.0507  tuned 0.7201
+[21:01:37] state   9: validation KL raw 3.6613  tuned 0.5263
+[21:01:37] state  10: validation KL raw 3.1179  tuned 0.2784
+[21:01:37] state  11: validation KL raw 1.7358  tuned 0.1050
+[21:01:37] state  12: validation KL raw 0.0000  tuned 0.0000
+Loading weights:   0%|          | 0/148 [00:00<?, ?it/s]Loading weights: 100%|██████████| 148/148 [00:00<00:00, 6919.52it/s]
+[transformers] Token indices sequence length is longer than the specified maximum sequence length for this model (1266 > 1024). Running this sequence through the model will result in indexing errors
+[21:01:44] measuring 283287 tokens, 62 documents, 553 windows
+[21:01:49] measured batch 1: 4607 tokens
+[21:02:31] measured batch 11: 45567 tokens
+[21:03:12] measured batch 21: 86527 tokens
+[21:03:53] measured batch 31: 127487 tokens
+[21:04:35] measured batch 41: 168447 tokens
+[21:05:16] measured batch 51: 209407 tokens
+[21:05:58] measured batch 61: 250367 tokens
+[21:06:31] {
+  "scored_tokens": 283286,
+  "n_states": 13,
+  "native_ppl": 24.845247207700297,
+  "max_abs_final_nll_error": 0.0
+}
+[transformers] Token indices sequence length is longer than the specified maximum sequence length for this model (3562 > 1024). Running this sequence through the model will result in indexing errors
+[21:06:43] training lens on 4000001 tokens (3907 windows)
+[21:06:47] lens step 1/490: mean KL 0.1707 nats
+[21:08:03] lens step 21/490: mean KL 0.0914 nats
+[21:09:19] lens step 41/490: mean KL 0.0508 nats
+[21:10:35] lens step 61/490: mean KL 0.0373 nats
+[21:11:51] lens step 81/490: mean KL 0.0301 nats
+[21:13:06] lens step 101/490: mean KL 0.0271 nats
+[21:14:22] lens step 121/490: mean KL 0.0245 nats
+[21:15:38] lens step 141/490: mean KL 0.0227 nats
+[21:16:54] lens step 161/490: mean KL 0.0212 nats
+[21:18:10] lens step 181/490: mean KL 0.0200 nats
+[21:19:26] lens step 201/490: mean KL 0.0191 nats
+[21:20:42] lens step 221/490: mean KL 0.0194 nats

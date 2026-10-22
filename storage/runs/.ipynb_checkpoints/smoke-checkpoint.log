@@ -1,0 +1,149 @@
+Loading weights:   0%|          | 0/148 [00:00<?, ?it/s]Loading weights: 100%|██████████| 148/148 [00:00<00:00, 15233.30it/s]
+[transformers] Token indices sequence length is longer than the specified maximum sequence length for this model (1266 > 1024). Running this sequence through the model will result in indexing errors
+[18:51:11] E0 check: 20001 tokens, 5 documents, 39 windows
+[transformers] `loss_type=None` was set in the config but it is unrecognized. Using the default loss: `ForCausalLMLoss`.
+[18:51:12] checked 4607 tokens: running native PPL 26.1822
+[18:51:12] checked 8703 tokens: running native PPL 27.3804
+[18:51:13] checked 12799 tokens: running native PPL 25.1647
+[18:51:13] checked 16895 tokens: running native PPL 25.6280
+[18:51:13] checked 19967 tokens: running native PPL 25.6732
+[18:51:13] checked 20000 tokens: running native PPL 25.6332
+[18:51:13] {
+  "scored_tokens": 20000,
+  "native_ppl": 25.633185202495856,
+  "readout_ppl": 25.633185202495856,
+  "max_abs_final_nll_error": 0.0,
+  "max_abs_final_logit_error": 0.0,
+  "max_abs_library_loss_gap": 2.962170224662941e-07
+}
+[transformers] Token indices sequence length is longer than the specified maximum sequence length for this model (3562 > 1024). Running this sequence through the model will result in indexing errors
+[18:51:18] unigram from 200001 tokens -> /workspace/storage/runs/smoke/gpt2/unigram.npy
+Loading weights:   0%|          | 0/148 [00:00<?, ?it/s]Loading weights: 100%|██████████| 148/148 [00:00<00:00, 14014.79it/s]
+[transformers] Token indices sequence length is longer than the specified maximum sequence length for this model (3562 > 1024). Running this sequence through the model will result in indexing errors
+[18:51:27] training lens on 200001 tokens (196 windows)
+[18:51:31] lens step 1/26: mean KL 8.9360 nats
+[18:52:46] lens step 21/26: mean KL 3.7105 nats
+[18:52:59] lens step 26/26: mean KL 3.4803 nats
+[18:55:06] state   0: validation KL raw 50.4730  tuned 18.8868
+[18:55:06] state   1: validation KL raw 7.8950  tuned 3.2765
+[18:55:06] state   2: validation KL raw 6.6777  tuned 2.9711
+[18:55:06] state   3: validation KL raw 6.3360  tuned 2.7720
+[18:55:06] state   4: validation KL raw 6.1423  tuned 2.6155
+[18:55:06] state   5: validation KL raw 5.9839  tuned 2.5004
+[18:55:06] state   6: validation KL raw 5.3440  tuned 2.1380
+[18:55:06] state   7: validation KL raw 4.9118  tuned 1.8449
+[18:55:06] state   8: validation KL raw 4.0507  tuned 1.4563
+[18:55:06] state   9: validation KL raw 3.6613  tuned 1.2341
+[18:55:06] state  10: validation KL raw 3.1179  tuned 0.9569
+[18:55:06] state  11: validation KL raw 1.7358  tuned 0.4992
+[18:55:06] state  12: validation KL raw 0.0000  tuned 0.0000
+Loading weights:   0%|          | 0/148 [00:00<?, ?it/s]Loading weights: 100%|██████████| 148/148 [00:00<00:00, 8292.35it/s]
+[transformers] Token indices sequence length is longer than the specified maximum sequence length for this model (1266 > 1024). Running this sequence through the model will result in indexing errors
+[18:55:12] measuring 20001 tokens, 5 documents, 39 windows
+[18:55:17] measured batch 1: 4607 tokens
+[18:55:33] {
+  "scored_tokens": 20000,
+  "n_states": 13,
+  "native_ppl": 25.633184655454333,
+  "max_abs_final_nll_error": 0.0
+}
+[transformers] Token indices sequence length is longer than the specified maximum sequence length for this model (3562 > 1024). Running this sequence through the model will result in indexing errors
+[18:55:40] training lens on 200001 tokens (196 windows)
+[18:55:44] lens step 1/26: mean KL 0.1706 nats
+[18:57:00] lens step 21/26: mean KL 0.0608 nats
+[18:57:13] lens step 26/26: mean KL 0.0607 nats
+[18:59:20] state   0: validation KL raw 0.8851  tuned 0.3153
+[18:59:20] state   1: validation KL raw 0.2283  tuned 0.0787
+[18:59:20] state   2: validation KL raw 0.1903  tuned 0.0624
+[18:59:20] state   3: validation KL raw 0.1656  tuned 0.0525
+[18:59:20] state   4: validation KL raw 0.1391  tuned 0.0458
+[18:59:20] state   5: validation KL raw 0.1149  tuned 0.0389
+[18:59:20] state   6: validation KL raw 0.0984  tuned 0.0324
+[18:59:20] state   7: validation KL raw 0.0798  tuned 0.0258
+[18:59:20] state   8: validation KL raw 0.0624  tuned 0.0189
+[18:59:20] state   9: validation KL raw 0.0469  tuned 0.0126
+[18:59:20] state  10: validation KL raw 0.0303  tuned 0.0074
+[18:59:20] state  11: validation KL raw 0.0144  tuned 0.0032
+[18:59:20] state  12: validation KL raw 0.0000  tuned 0.0000
+[transformers] Token indices sequence length is longer than the specified maximum sequence length for this model (1266 > 1024). Running this sequence through the model will result in indexing errors
+[18:59:26] measuring 20001 tokens, 5 documents, 39 windows
+[18:59:31] measured batch 1: 4607 tokens
+[18:59:46] {
+  "scored_tokens": 20000,
+  "n_states": 13,
+  "native_ppl": 58735.5901350375,
+  "max_abs_final_nll_error": 0.0
+}
+Loading weights:   0%|          | 0/148 [00:00<?, ?it/s]Loading weights: 100%|██████████| 148/148 [00:00<00:00, 16984.24it/s]
+[transformers] Token indices sequence length is longer than the specified maximum sequence length for this model (3562 > 1024). Running this sequence through the model will result in indexing errors
+[18:59:55] training lens on 200001 tokens (196 windows)
+[18:59:59] lens step 1/26: mean KL 8.0578 nats
+[19:01:15] lens step 21/26: mean KL 2.1407 nats
+[19:01:28] lens step 26/26: mean KL 1.9284 nats
+[19:03:35] state   0: validation KL raw 51.1230  tuned 12.9773
+[19:03:35] state   1: validation KL raw 10.1779  tuned 1.5425
+[19:03:35] state   2: validation KL raw 6.1829  tuned 0.9387
+[19:03:35] state   3: validation KL raw 6.3233  tuned 0.8012
+[19:03:35] state   4: validation KL raw 6.5551  tuned 1.0446
+[19:03:35] state   5: validation KL raw 6.4861  tuned 0.8407
+[19:03:35] state   6: validation KL raw 6.2017  tuned 0.8557
+[19:03:35] state   7: validation KL raw 1.5417  tuned 0.3841
+[19:03:35] state   8: validation KL raw 1.5810  tuned 0.3592
+[19:03:35] state   9: validation KL raw 1.2664  tuned 0.4906
+[19:03:35] state  10: validation KL raw 0.3358  tuned 0.3029
+[19:03:35] state  11: validation KL raw 0.0634  tuned 0.3760
+[19:03:35] state  12: validation KL raw 0.0000  tuned 0.0000
+Loading weights:   0%|          | 0/148 [00:00<?, ?it/s]Loading weights: 100%|██████████| 148/148 [00:00<00:00, 14916.31it/s]
+[transformers] Token indices sequence length is longer than the specified maximum sequence length for this model (1266 > 1024). Running this sequence through the model will result in indexing errors
+[19:03:41] measuring 20001 tokens, 5 documents, 39 windows
+[19:03:46] measured batch 1: 4607 tokens
+[19:04:02] {
+  "scored_tokens": 20000,
+  "n_states": 13,
+  "native_ppl": 1125062.7300487224,
+  "max_abs_final_nll_error": 0.0
+}
+Loading weights:   0%|          | 0/148 [00:00<?, ?it/s]Loading weights: 100%|██████████| 148/148 [00:00<00:00, 14252.91it/s]
+[transformers] Token indices sequence length is longer than the specified maximum sequence length for this model (3562 > 1024). Running this sequence through the model will result in indexing errors
+[19:04:11] training lens on 200001 tokens (196 windows)
+[19:04:15] lens step 1/26: mean KL 7.1563 nats
+[19:05:31] lens step 21/26: mean KL 2.1597 nats
+[19:05:44] lens step 26/26: mean KL 1.8485 nats
+[19:07:51] state   0: validation KL raw 50.1626  tuned 14.0322
+[19:07:51] state   1: validation KL raw 6.9091  tuned 1.3632
+[19:07:51] state   2: validation KL raw 6.1757  tuned 1.3525
+[19:07:51] state   3: validation KL raw 4.9303  tuned 1.2701
+[19:07:51] state   4: validation KL raw 3.1068  tuned 0.9164
+[19:07:51] state   5: validation KL raw 4.0328  tuned 1.0833
+[19:07:51] state   6: validation KL raw 2.9723  tuned 0.8913
+[19:07:51] state   7: validation KL raw 3.5021  tuned 0.9643
+[19:07:51] state   8: validation KL raw 1.6158  tuned 0.4279
+[19:07:51] state   9: validation KL raw 1.1282  tuned 0.3481
+[19:07:51] state  10: validation KL raw 1.2513  tuned 0.3400
+[19:07:51] state  11: validation KL raw 0.8368  tuned 0.2924
+[19:07:51] state  12: validation KL raw 0.0000  tuned 0.0000
+Loading weights:   0%|          | 0/148 [00:00<?, ?it/s]Loading weights: 100%|██████████| 148/148 [00:00<00:00, 7961.28it/s]
+[transformers] Token indices sequence length is longer than the specified maximum sequence length for this model (1266 > 1024). Running this sequence through the model will result in indexing errors
+[19:07:58] measuring 20001 tokens, 5 documents, 39 windows
+[19:08:03] measured batch 1: 4607 tokens
+[19:08:18] {
+  "scored_tokens": 20000,
+  "n_states": 13,
+  "native_ppl": 2748.1422485617036,
+  "max_abs_final_nll_error": 0.0
+}
+/workspace/CloudFare/Depth-Probe/depthprobe/analysis.py:40: RuntimeWarning: invalid value encountered in divide
+  boot = (self.weights @ top) / (self.weights @ bottom)
+[19:08:22] gpt2-pretrained: 20000 tokens, 5 documents
+[19:08:22]   raw: monotone_nll 0.004 [0.003, 0.006], monotone_kl 0.014 [0.011, 0.017], correct_then_wrong 0.076 [0.070, 0.084]
+[19:08:22]   tuned: monotone_nll 0.003 [0.002, 0.004], monotone_kl 0.049 [0.041, 0.053], correct_then_wrong 0.110 [0.102, 0.123]
+[19:08:22] gpt2-random: 20000 tokens, 5 documents
+[19:08:22]   raw: monotone_nll 0.000 [0.000, 0.000], monotone_kl 1.000 [1.000, 1.000], correct_then_wrong 0.007 [0.006, 0.011]
+[19:08:22]   tuned: monotone_nll 0.000 [0.000, 0.001], monotone_kl 1.000 [1.000, 1.000], correct_then_wrong 0.000 [0.000, 0.001]
+[19:08:22] gpt2-shuffle_all: 20000 tokens, 5 documents
+[19:08:22]   raw: monotone_nll 0.000 [0.000, 0.000], monotone_kl 0.010 [0.001, 0.026], correct_then_wrong 0.007 [0.006, 0.008]
+[19:08:22]   tuned: monotone_nll 0.000 [0.000, 0.000], monotone_kl 0.000 [0.000, 0.000], correct_then_wrong 0.002 [0.001, 0.003]
+[19:08:22] gpt2-shuffle_middle: 20000 tokens, 5 documents
+[19:08:22]   raw: monotone_nll 0.000 [0.000, 0.000], monotone_kl 0.003 [0.001, 0.005], correct_then_wrong 0.076 [0.066, 0.088]
+[19:08:22]   tuned: monotone_nll 0.000 [0.000, 0.000], monotone_kl 0.007 [0.005, 0.008], correct_then_wrong 0.055 [0.051, 0.059]
+[19:08:22] wrote /workspace/storage/runs/smoke/gpt2/report

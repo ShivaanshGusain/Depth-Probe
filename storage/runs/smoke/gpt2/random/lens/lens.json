@@ -1,0 +1,168 @@
+{
+  "tool": "depthprobe",
+  "version": "0.1.0",
+  "command": "train-lens",
+  "args": {
+    "command": "train-lens",
+    "model": "/workspace/storage/models/gpt2",
+    "model_revision": null,
+    "dtype": "float32",
+    "device": "auto",
+    "attn": null,
+    "init": "random",
+    "init_seed": 0,
+    "shuffle": "none",
+    "shuffle_seed": 0,
+    "data": "/workspace/storage/data/wikitext/wikitext-103-raw-v1",
+    "split": "train",
+    "joiner": "",
+    "ctx": 1024,
+    "stride": 512,
+    "prepend_bos": false,
+    "batch_size": 8,
+    "chunk": 1024,
+    "train_tokens": 200000,
+    "val_split": "validation",
+    "val_tokens": 200000,
+    "lr": 0.001,
+    "warmup": 0.1,
+    "seed": 0,
+    "out": "/workspace/storage/runs/smoke/gpt2/random/lens",
+    "overwrite": false,
+    "run": "<function command_train_lens at 0xf64ed91814e0>"
+  },
+  "environment": {
+    "python": "3.12.3",
+    "platform": "Linux-6.17.0-1026-nvidia-aarch64-with-glibc2.39",
+    "torch": "2.8.0a0+34c6371d24.nv25.08",
+    "torch_cuda": "13.0",
+    "transformers": "5.20.2",
+    "numpy": "1.26.4",
+    "device": "NVIDIA GB10",
+    "tf32_matmul": false,
+    "source_sha256": "da18d4ba87b99acdda99f97333491ddeb9e0d40433e0899e304b3c670cb225af",
+    "created_utc": "2026-10-21T18:59:20Z"
+  },
+  "model": {
+    "path": "/workspace/storage/models/gpt2",
+    "files": [
+      {
+        "name": "config.json",
+        "bytes": 665
+      },
+      {
+        "name": "generation_config.json",
+        "bytes": 124
+      },
+      {
+        "name": "merges.txt",
+        "bytes": 456318
+      },
+      {
+        "name": "model.safetensors",
+        "bytes": 548105171
+      },
+      {
+        "name": "onnx/merges.txt",
+        "bytes": 456318
+      },
+      {
+        "name": "tokenizer.json",
+        "bytes": 1355256
+      },
+      {
+        "name": "tokenizer_config.json",
+        "bytes": 26
+      },
+      {
+        "name": "vocab.json",
+        "bytes": 1042301
+      }
+    ],
+    "config_sha256": "0daed7749b4f02b8f76240d5444551d7b08712dab4d0adb8239c56ba823bb7b4"
+  },
+  "family": "gpt2",
+  "permutation": null,
+  "variant": {
+    "init": "random",
+    "init_seed": 0,
+    "shuffle": "none",
+    "shuffle_seed": null
+  },
+  "bos_id": null,
+  "device": "cuda",
+  "lens": {
+    "n_states": 13,
+    "width": 768,
+    "variant": {
+      "init": "random",
+      "init_seed": 0,
+      "shuffle": "none",
+      "shuffle_seed": null
+    },
+    "permutation": null,
+    "config_sha256": "0daed7749b4f02b8f76240d5444551d7b08712dab4d0adb8239c56ba823bb7b4",
+    "train_tokens": 200001,
+    "validation": {
+      "tokens": 199805,
+      "raw_kl": [
+        0.8851229426840583,
+        0.22827339518884918,
+        0.19027633416885661,
+        0.16562791526838155,
+        0.13912247149711202,
+        0.11492034634510225,
+        0.09843097834826822,
+        0.07978392317710269,
+        0.06244851276533927,
+        0.04685937111055716,
+        0.030303465069803533,
+        0.014426746715884444,
+        0.0
+      ],
+      "tuned_kl": [
+        0.3153146724443662,
+        0.0786829065057639,
+        0.06237465716772217,
+        0.05250479252213535,
+        0.04575777997698757,
+        0.038899072798065516,
+        0.03236416197435261,
+        0.025815587516172384,
+        0.018926163447135616,
+        0.012552959292933902,
+        0.00738422330150536,
+        0.003238937636460602,
+        0.0
+      ]
+    }
+  },
+  "history": [
+    0.17061859369277954,
+    0.15618818998336792,
+    0.13511711359024048,
+    0.11694028228521347,
+    0.10498284548521042,
+    0.0968344509601593,
+    0.09190922230482101,
+    0.08729082345962524,
+    0.0831531211733818,
+    0.07835116237401962,
+    0.07663154602050781,
+    0.07457595318555832,
+    0.0709051862359047,
+    0.06881892681121826,
+    0.06710643321275711,
+    0.06488528102636337,
+    0.0637722834944725,
+    0.06405910104513168,
+    0.061682116240262985,
+    0.06085249409079552,
+    0.060801416635513306,
+    0.05933896824717522,
+    0.05875232815742493,
+    0.05794162675738335,
+    0.05648382008075714,
+    0.06069578230381012
+  ]
+}

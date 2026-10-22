@@ -1,0 +1,57 @@
+{
+  "command": "unigram",
+  "args": {
+    "command": "unigram",
+    "model": "/workspace/storage/models/gpt2",
+    "data": "/workspace/storage/data/wikitext/wikitext-103-raw-v1",
+    "split": "train",
+    "max_tokens": 200000,
+    "joiner": "",
+    "alpha": 1.0,
+    "seed": 0,
+    "out": "/workspace/storage/runs/smoke/gpt2/unigram.npy",
+    "overwrite": false,
+    "run": "<function command_unigram at 0xe8fbed045440>"
+  },
+  "tokens": 200001,
+  "documents": 48,
+  "vocab_size": 50257,
+  "model": {
+    "path": "/workspace/storage/models/gpt2",
+    "files": [
+      {
+        "name": "config.json",
+        "bytes": 665
+      },
+      {
+        "name": "generation_config.json",
+        "bytes": 124
+      },
+      {
+        "name": "merges.txt",
+        "bytes": 456318
+      },
+      {
+        "name": "model.safetensors",
+        "bytes": 548105171
+      },
+      {
+        "name": "onnx/merges.txt",
+        "bytes": 456318
+      },
+      {
+        "name": "tokenizer.json",
+        "bytes": 1355256
+      },
+      {
+        "name": "tokenizer_config.json",
+        "bytes": 26
+      },
+      {
+        "name": "vocab.json",
+        "bytes": 1042301
+      }
+    ],
+    "config_sha256": "0daed7749b4f02b8f76240d5444551d7b08712dab4d0adb8239c56ba823bb7b4"
+  }
+}

@@ -2,8 +2,10 @@
 __pycache__/
 *.pyc
 .pytest_cache/
-/runs
-outputs/
+storage/runs/**/cache
+storage/models/
+storage/data/
+
 *.pt
 *.npz
 *.npy
