@@ -81,17 +81,33 @@ def load_model(path, *, dtype="float32", init="pretrained", init_seed=0, device=
         model = AutoModelForCausalLM.from_pretrained(path, local_files_only=True, **{key: torch_dtype}, **kwargs)
     elif init == "random":
         # Control E5(i): same architecture, no learning. Seeded on CPU so every machine agrees.
+        # Built directly in the requested dtype: a 30B model initialized in float32 first would need ~120 GB.
         config = AutoConfig.from_pretrained(path, local_files_only=True)
+        config.dtype = torch_dtype  # from_config falls back to the config's dtype (transformers >= 4.56)
+        previous = torch.get_default_dtype()
         with torch.random.fork_rng(devices=[]):
             torch.manual_seed(init_seed)
-            model = AutoModelForCausalLM.from_config(config, **kwargs)
+            torch.set_default_dtype(torch_dtype)
+            try:
+                model = AutoModelForCausalLM.from_config(config, **kwargs)
+            finally:
+                torch.set_default_dtype(previous)
     else:
         raise ValueError(f"Unknown init: {init}")
     for key in UNSUPPORTED_CONFIG_KEYS:
         if getattr(model.config, key, None) not in (None, 1, 1.0):
             raise ValueError(f"{key} is set; the readout would not match the model's own head")
+    # Mixture-of-experts: with router logits on, the library's loss adds a load-balancing term, so it is no
+    # longer plain next-token loss and the E0 label check would fail. Routing itself is unaffected.
+    if getattr(model.config, "output_router_logits", False):
+        model.config.output_router_logits = False
     find_parts(model)
-    model = model.to(device=device, dtype=torch_dtype).eval()
+    # Both loaders already build the weights in torch_dtype; only stray parameters are cast (on CPU, before the
+    # move). A whole-module .to(dtype) would also round float32 buffers such as RoPE inv_freq and shift positions.
+    for parameter in model.parameters():
+        if parameter.dtype != torch_dtype:
+            parameter.data = parameter.data.to(torch_dtype)
+    model = model.to(device=device).eval()
     model.requires_grad_(False)
     return model
 
@@ -154,13 +170,19 @@ def forward_states(model, input_ids, **kwargs):
 
 
 class Readout(nn.Module):
-    """The model's own final norm and unembedding, as frozen float32 copies, applied to any state."""
+    """The model's own final norm and unembedding, as frozen copies, applied to any state.
 
-    def __init__(self, model):
+    dtype=float32 decodes every state in full precision. Passing the model's own dtype (e.g. bfloat16)
+    repeats the arithmetic of its native head, so the last state reproduces the model's logits exactly;
+    a float32 readout of a bfloat16 model differs from them by bfloat16 rounding. Logits are float32 either way.
+    """
+
+    def __init__(self, model, dtype=torch.float32):
         super().__init__()
         parts = find_parts(model)
-        self.norm = copy.deepcopy(parts.norm).float().requires_grad_(False)
-        self.head = copy.deepcopy(parts.head).float().requires_grad_(False)
+        self.dtype = dtype
+        self.norm = copy.deepcopy(parts.norm).to(dtype).requires_grad_(False)
+        self.head = copy.deepcopy(parts.head).to(dtype).requires_grad_(False)
 
     def forward(self, hidden):
-        return self.head(self.norm(hidden.float()))
+        return self.head(self.norm(hidden.to(self.dtype))).float()

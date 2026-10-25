@@ -1,12 +1,18 @@
 import numpy as np
+import pytest
 import torch
 import torch.nn.functional as F
 
-from conftest import VOCAB
+from conftest import H1_KINDS, MODEL_CLASSES, VOCAB, tiny, tiny_config
 from depthprobe.data import Corpus, make_windows
 from depthprobe.lens import TunedLens, evaluate_lens, load_lens, save_lens, train_lens
 from depthprobe.measure import check, layer_metrics, measure, unigram_logp
-from depthprobe.model import Readout, hidden_width, n_blocks
+from depthprobe.model import Readout, hidden_width, load_model, n_blocks
+
+
+@pytest.fixture(params=H1_KINDS)
+def model(request):
+    return tiny(request.param)
 
 
 def corpus(n=120):
@@ -37,6 +43,28 @@ def test_check_matches_library_loss(model):
     assert result["scored_tokens"] == len(text.ids) - 1
     assert result["max_abs_library_loss_gap"] < 1e-4
     assert result["max_abs_final_nll_error"] < 1e-4
+
+
+def test_check_runs_on_bfloat16_model():
+    # Label alignment and the final-state comparison on a bfloat16 model. The exact match of a
+    # model-dtype readout is tested in test_model.py; here rows are gathered, so it need not be bitwise.
+    model = tiny("llama").to(torch.bfloat16)
+    text = corpus()
+    result = check(model, Readout(model, dtype=torch.bfloat16), text, make_windows(len(text.ids), 32, 16),
+                   batch_size=2, bos_id=None, chunk=7, device="cpu", log=lambda _: None)
+    assert result["max_abs_library_loss_gap"] < 1e-4
+    assert result["max_abs_final_nll_error"] < 0.05
+    assert 0 <= result["mean_abs_final_nll_error"] <= result["max_abs_final_nll_error"]
+
+
+def test_check_ignores_moe_router_loss(tmp_path):
+    config = tiny_config("qwen3_moe", output_router_logits=True, router_aux_loss_coef=1.0)
+    MODEL_CLASSES["qwen3_moe"](config).save_pretrained(tmp_path)
+    model = load_model(tmp_path)
+    text = corpus()
+    result = check(model, Readout(model), text, make_windows(len(text.ids), 32, 16), batch_size=2, bos_id=None,
+                   chunk=7, device="cpu", log=lambda _: None)
+    assert result["max_abs_library_loss_gap"] < 1e-4
 
 
 def test_measure_shapes_and_final_state_consistency(model):

@@ -70,7 +70,7 @@ def _to_device(batch, device):
 @torch.no_grad()
 def check(model, readout, corpus, windows, *, batch_size, bos_id, chunk, device, log=print):
     """E0: label alignment against the library's own loss, and readout(final state) against native logits."""
-    native_sum, readout_sum, count = 0.0, 0.0, 0
+    native_sum, readout_sum, error_sum, count = 0.0, 0.0, 0.0, 0
     worst_nll_error, worst_loss_gap, worst_logit_error = 0.0, 0.0, 0.0
     for batch in iterate_batches(corpus.ids, windows, batch_size, bos_id):
         inputs, rows, positions = _to_device(batch, device)
@@ -92,7 +92,9 @@ def check(model, readout, corpus, windows, *, batch_size, bos_id, chunk, device,
             readout_logits = readout(final[part])
             native_nll = F.cross_entropy(native_logits, targets[part], reduction="none")
             readout_nll = F.cross_entropy(readout_logits, targets[part], reduction="none")
-            worst_nll_error = max(worst_nll_error, (native_nll - readout_nll).abs().max().item())
+            nll_error = (native_nll - readout_nll).abs()
+            worst_nll_error = max(worst_nll_error, nll_error.max().item())
+            error_sum += nll_error.sum().item()
             worst_logit_error = max(worst_logit_error, (native_logits - readout_logits).abs().max().item())
             batch_native += native_nll.sum().item()
             readout_sum += readout_nll.sum().item()
@@ -105,6 +107,9 @@ def check(model, readout, corpus, windows, *, batch_size, bos_id, chunk, device,
         "native_ppl": math.exp(native_sum / count),
         "readout_ppl": math.exp(readout_sum / count),
         "max_abs_final_nll_error": worst_nll_error,
+        # In bfloat16 a single rounding step near a logit of 30 is 0.125 nats, so the mean shows whether
+        # a large maximum is isolated rounding or a systematic mismatch.
+        "mean_abs_final_nll_error": error_sum / count,
         "max_abs_final_logit_error": worst_logit_error,
         "max_abs_library_loss_gap": worst_loss_gap,
     }
@@ -116,7 +121,7 @@ def measure(model, readout, corpus, windows, *, batch_size, bos_id, chunk, devic
     n_states = n_blocks(model) + 1
     accumulator = Accumulator()
     unigram = None if unigram_logp is None else torch.from_numpy(unigram_logp).float().to(device)
-    worst_error, scored = 0.0, 0
+    worst_error, error_sum, scored = 0.0, 0.0, 0
     for step, batch in enumerate(iterate_batches(corpus.ids, windows, batch_size, bos_id)):
         inputs, rows, positions = _to_device(batch, device)
         states, output = forward_states(model, inputs)
@@ -132,8 +137,9 @@ def measure(model, readout, corpus, windows, *, batch_size, bos_id, chunk, devic
             final_logits = readout(final)
             logp_final = torch.log_softmax(final_logits, dim=-1)
             final_argmax = final_logits.argmax(-1)
-            error = (F.nll_loss(logp_final, target, reduction="none") - native_nll).abs().max().item()
-            worst_error = max(worst_error, error)
+            error = (F.nll_loss(logp_final, target, reduction="none") - native_nll).abs()
+            worst_error = max(worst_error, error.max().item())
+            error_sum += error.sum().item()
             if worst_error > max_final_nll_error:
                 raise RuntimeError(f"Readout of the final state differs from native logits by {worst_error:.4f} nats")
             accumulator.token("native_nll", native_nll)
@@ -163,6 +169,7 @@ def measure(model, readout, corpus, windows, *, batch_size, bos_id, chunk, devic
         "n_states": n_states,
         "native_ppl": float(np.exp(arrays["native_nll"].astype(np.float64).mean())),
         "max_abs_final_nll_error": worst_error,
+        "mean_abs_final_nll_error": error_sum / max(scored, 1),
     }
     return arrays, stats
 

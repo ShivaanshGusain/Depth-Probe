@@ -24,6 +24,10 @@ def add_model_args(parser):
     group.add_argument("--model", required=True, help="Local model directory (never downloaded)")
     group.add_argument("--model-revision", help="Commit/revision you downloaded; recorded only")
     group.add_argument("--dtype", choices=list(DTYPES), default="float32")
+    group.add_argument("--readout-dtype", choices=["float32", "model"], default="float32",
+                       help="Precision of the final norm/head used to decode every state; 'model' repeats a "
+                            "bfloat16 model's own head arithmetic, matching its logits up to kernel accumulation "
+                            "differences (recommended with --dtype bfloat16)")
     group.add_argument("--device", default="auto", help="auto, cpu, cuda, cuda:0, ...")
     group.add_argument("--attn", help="attn_implementation (e.g. eager, sdpa); default: library choice")
     group.add_argument("--init", choices=["pretrained", "random"], default="pretrained", help="random = E5 control")
@@ -61,7 +65,7 @@ def variant(args):
 
 
 def setup(args):
-    from depthprobe.model import (Readout, find_parts, load_model, load_tokenizer, max_context,
+    from depthprobe.model import (DTYPES, Readout, find_parts, load_model, load_tokenizer, max_context,
                                   permute_blocks, resolve_device, shuffle_permutation)
 
     torch.backends.cuda.matmul.allow_tf32 = False
@@ -81,9 +85,10 @@ def setup(args):
         bos_id = tokenizer.bos_token_id
         if bos_id is None:
             sys.exit("Tokenizer has no BOS token")
-    readout = Readout(model)
+    readout_dtype = DTYPES[args.dtype] if args.readout_dtype == "model" else torch.float32
+    readout = Readout(model, dtype=readout_dtype)
     meta = {"family": find_parts(model).family, "permutation": permutation, "variant": variant(args),
-            "bos_id": bos_id, "device": device}
+            "bos_id": bos_id, "device": device, "readout_dtype": str(readout_dtype).removeprefix("torch.")}
     return model, tokenizer, readout, bos_id, device, meta
 
 
@@ -150,15 +155,24 @@ def command_train_lens(args):
     order = np.random.default_rng(args.seed).permutation(len(train_windows))
     train_windows = [train_windows[i] for i in order]
     log(f"training lens on {len(train.ids)} tokens ({len(train_windows)} windows)")
-    lens, history = train_lens(model, readout, train.ids, train_windows, batch_size=args.batch_size, bos_id=bos_id,
-                               chunk=args.chunk, lr=args.lr, warmup_fraction=args.warmup, device=device, log=log)
+    # TF32 only while fitting, including the forward passes that produce the training states (speed for large
+    # vocabularies); the lens's validation below and all measurement stay strict.
+    previous_tf32 = (torch.backends.cuda.matmul.allow_tf32, torch.backends.cudnn.allow_tf32)
+    torch.backends.cuda.matmul.allow_tf32 = torch.backends.cudnn.allow_tf32 = bool(args.tf32)
+    try:
+        lens, history = train_lens(model, readout, train.ids, train_windows, batch_size=args.batch_size,
+                                   bos_id=bos_id, chunk=args.chunk, lr=args.lr, warmup_fraction=args.warmup,
+                                   device=device, log=log)
+    finally:
+        torch.backends.cuda.matmul.allow_tf32, torch.backends.cudnn.allow_tf32 = previous_tf32
     validation = load_corpus(tokenizer, args.data, args.val_split, max_tokens=args.val_tokens, joiner=args.joiner)
     val_windows = windows_for(validation, args, bos_id, args.ctx - (bos_id is not None))
     evaluation = evaluate_lens(model, readout, lens, validation.ids, val_windows, batch_size=args.batch_size,
                                bos_id=bos_id, chunk=args.chunk, device=device)
     lens_meta = {"n_states": n_blocks(model) + 1, "width": hidden_width(model), "variant": meta["variant"],
                  "permutation": meta["permutation"], "config_sha256": model_fingerprint(args.model)["config_sha256"],
-                 "train_tokens": int(len(train.ids)), "validation": evaluation}
+                 "train_tokens": int(len(train.ids)), "dtype": args.dtype, "readout_dtype": meta["readout_dtype"],
+                 "tf32_during_fit": bool(args.tf32), "validation": evaluation}
     save_lens(out / "lens.pt", lens, lens_meta)
     write_json(out / "lens.json", manifest(args, meta, lens=lens_meta, history=history))
     for layer, (raw, tuned) in enumerate(zip(evaluation["raw_kl"], evaluation["tuned_kl"])):
@@ -176,8 +190,12 @@ def command_measure(args):
     if args.lens:
         lens, lens_meta = load_lens(args.lens, device)
         expected = {"variant": meta["variant"], "permutation": meta["permutation"],
-                    "config_sha256": model_fingerprint(args.model)["config_sha256"]}
-        found = {key: lens_meta.get(key) for key in expected}
+                    "config_sha256": model_fingerprint(args.model)["config_sha256"],
+                    "readout_dtype": meta["readout_dtype"]}
+        if "dtype" in lens_meta:  # older lenses do not record the model dtype; it cannot be checked for them
+            expected["dtype"] = args.dtype
+        # Older lenses always used a float32 readout.
+        found = {key: lens_meta.get(key, "float32" if key == "readout_dtype" else None) for key in expected}
         if found != expected:
             sys.exit(f"Lens was trained for {found}, but this run is {expected}")
     unigram = None
@@ -239,6 +257,9 @@ def command_finetune_segment(args):
         sys.exit("Single-file evaluation requires a separate --train-data file")
     if args.batch_size < 1 or args.chunk < 1 or (args.inference_batch_size is not None and args.inference_batch_size < 1):
         sys.exit("Batch sizes and chunk must be positive")
+    if args.readout_dtype == "model" and args.dtype != "float32":
+        # Training runs through the readout; a bfloat16 head would round small optimizer updates away.
+        sys.exit("finetune-segment trains through the readout; use --readout-dtype float32")
     if args.amp != "none" and args.dtype != "float32":
         sys.exit("Use --dtype float32 with --amp bfloat16 to keep FP32 optimizer/master weights")
     out = prepare_dir(args.out, args.overwrite)
@@ -388,6 +409,9 @@ def parser():
     lens.add_argument("--lr", type=float, default=1e-3)
     lens.add_argument("--warmup", type=float, default=0.1, help="Warmup as a fraction of steps")
     lens.add_argument("--seed", type=int, default=0)
+    lens.add_argument("--tf32", action="store_true",
+                      help="Allow TF32 matmuls while fitting the lens, including the forward passes that produce its "
+                           "training states (faster on large vocabularies); validation and measurement stay strict")
     lens.add_argument("--out", required=True)
     lens.add_argument("--overwrite", action="store_true")
     lens.set_defaults(run=command_train_lens)

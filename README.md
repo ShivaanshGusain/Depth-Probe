@@ -66,8 +66,9 @@ structure (E8), looped models (Ouro, Huginn).
 - **Pilot vs confirmatory.** GPT-2 small is the exploratory model: it is used to develop the
   pipeline and set the refutation thresholds in `PREREGISTRATION.md`. Only models the thresholds were
   not tuned on count as evidence (Llama, Mistral, Qwen, Pythia, Ouro, Huginn).
-- **No quantization.** float32 for small models; bfloat16 weights for large ones, with all
-  probabilities computed in float32.
+- **No quantization.** float32 for small models; bfloat16 weights for large ones. The readout runs in
+  float32 by default, or in the model's own dtype with `--readout-dtype model`; softmax, NLL and KL are
+  always computed in float32.
 - **Offline.** Nothing is downloaded by the code. Models and data are local paths.
 - **Provenance.** Every output has a manifest: arguments, library versions, device, source-code
   hash, and model file list.
@@ -128,6 +129,51 @@ python -m depthprobe train-lens --model M --data D --out runs/lens
 python -m depthprobe measure    --model M --data D --lens runs/lens/lens.pt --unigram runs/unigram.npy --out runs/measure
 python -m depthprobe analyze    runs/measure [more runs ...] --out runs/report
 ```
+
+### Larger dense and mixture-of-experts models
+
+`scripts/pilot.sh` runs the same pilot for any supported decoder: GPT-2, Pythia, Llama, Mistral, Qwen2/3,
+and mixture-of-experts models with the same layout (Qwen3-MoE, Mixtral, OLMoE). No new adapter is needed
+for these; Gemma (logit soft-capping) and custom-code models are not supported. Use base models.
+
+```bash
+MODEL=$MODELS/qwen3-8b-base NAME=qwen3-8b OUT=$OUT WIKI=$DATA/wikitext/wikitext-103-raw-v1 \
+  DTYPE=float32 CHUNK=256 TRAIN_TOKENS=1000000 LENS_TF32=1 bash scripts/pilot.sh
+
+MODEL=$MODELS/qwen3-30b-a3b-base NAME=qwen3-30b-a3b OUT=$OUT WIKI=$DATA/wikitext/wikitext-103-raw-v1 \
+  DTYPE=bfloat16 READOUT_DTYPE=model BATCH=2 CHUNK=256 TRAIN_TOKENS=1000000 EVAL_TOKENS=100000 \
+  LENS_TF32=1 bash scripts/pilot.sh
+```
+
+| Variable | Default | Meaning |
+|---|---|---|
+| `DTYPE` | float32 | Model weights; bfloat16 for models too large for float32 |
+| `READOUT_DTYPE` | float32 | `model` decodes every state with the model's own head arithmetic, so a bfloat16 model's last state matches its logits up to kernel accumulation differences (bitwise on the full hidden-state tensor). A float32 readout of a bfloat16 model differs by bfloat16 rounding, which raises the mean error |
+| `CTX`, `STRIDE` | 1024, CTX/2 | Window length and stride |
+| `BATCH`, `CHUNK` | 4, 512 | Windows per batch; tokens per readout chunk (lower both for large vocabularies) |
+| `TRAIN_TOKENS`, `VAL_TOKENS` | 4M, 200k | Tuned-lens training and validation tokens |
+| `EVAL_TOKENS` | whole test split | Cap on scored test tokens |
+| `VARIANTS` | all four | Any of `pretrained random shuffle_all shuffle_middle` |
+| `LENS_TF32` | 0 | `1` allows TF32 while fitting the lens, including the forward passes that produce its training states; the lens's validation and all measurement stay strict |
+| `PREPEND_BOS` | 0 | `1` for tokenizers that expect BOS (e.g. Llama, Mistral, Mixtral); Qwen has none |
+| `MAX_FINAL_NLL_ERROR` | 0.1 (float32), 0.5 (bfloat16) | Largest allowed final-layer NLL difference between the readout and the model's own logits on any token, used by the E0 gate and by `measure`. One bfloat16 step is 0.125 nats for logits in [16, 32) and 0.25 in [32, 64), so isolated rounding can reach these values |
+| `MAX_MEAN_FINAL_NLL_ERROR` | 0.001 (float32), 0.01 (bfloat16) | Largest allowed mean of that difference, checked by the E0 gate; a systematic mismatch shows here |
+| `MODEL_REVISION` | — | Recorded in manifests |
+
+- **Restarts:** finished steps are skipped, so an interrupted run is restarted with the same command.
+  Result-affecting settings (model, corpus, device, precision, context, token budgets) are stamped in
+  `$OUT/$NAME/settings.env`; a rerun with different settings stops instead of mixing outputs (use a new
+  `NAME`). The pilot also refuses a non-empty `$OUT/$NAME` that has no stamp, such as runs made before
+  stamping. `measure` refuses a tuned lens fitted with a different `READOUT_DTYPE` or `DTYPE` (older
+  lenses count as float32-readout lenses; their model dtype was not recorded).
+- **E0 gate:** the pilot stops right after the check if scoring disagrees with the library's own loss or
+  the readout does not reproduce the model's own logits (maximum or mean error), before the expensive
+  lens training. The message says which condition failed.
+- **Mixture-of-experts:** models load with router logits off, so the E0 check compares plain next-token
+  loss; routing is unchanged.
+- **Precision:** models are built directly in `DTYPE` (the random-weights control too), and only
+  parameters are cast, so float32 buffers such as RoPE frequencies keep full precision.
+- `finetune-segment` trains through the readout and therefore requires `--readout-dtype float32`.
 
 ## Local middle-block fine-tuning
 
