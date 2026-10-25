@@ -51,6 +51,9 @@ def test_h1_commands_on_bfloat16_moe(tmp_path):
         main(["measure", *float32_readout, "--stride", "8", "--lens", str(tmp_path / "pretrained" / "lens" / "lens.pt"),
               "--out", str(tmp_path / "mismatch")])
     assert "readout_dtype" in str(refusal.value)
+    main(["analyze", str(tmp_path / "pretrained" / "measure"), str(tmp_path / "random" / "measure"),
+          "--bootstrap", "20", "--out", str(tmp_path / "report")])
+    assert (tmp_path / "report" / "summary.json").exists()
 
 
 def test_lens_without_precision_fields_counts_as_float32_readout(tmp_path):
@@ -84,6 +87,3 @@ def test_finetune_refuses_bfloat16_readout_before_any_work(tmp_path):
               "--first-block", "1", "--last-block", "1", "--dtype", "bfloat16", "--readout-dtype", "model",
               "--out", str(out)])
     assert not out.exists()
-    main(["analyze", str(tmp_path / "pretrained" / "measure"), str(tmp_path / "random" / "measure"),
-          "--bootstrap", "20", "--out", str(tmp_path / "report")])
-    assert (tmp_path / "report" / "summary.json").exists()
