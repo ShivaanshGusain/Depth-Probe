@@ -180,6 +180,9 @@ def test_run_perturbation_accumulates_consistent_sums(kind):
     model = tiny(kind)
     readout = Readout(model)
     text = corpus()
+    pad = model.config.pad_token_id
+    if pad is not None:  # nn.Embedding(padding_idx=pad) keeps that row at zero: noise sized to it is zero at state 0
+        text.ids[text.ids == pad] = (pad + 1) % VOCAB
     windows = make_windows(len(text.ids), 32, 16)
     calibration = calibrate(model, readout, text, windows, batch_size=2, bos_id=None, device="cpu", log=lambda _: None)
     arrays, meta = run_perturbation(model, readout, text, windows, calibration, sites=[0, 2], families=list(FAMILIES),
