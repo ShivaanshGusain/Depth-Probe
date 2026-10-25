@@ -52,6 +52,22 @@ def read_lines(path, split):
             import pyarrow.parquet as pq
 
             lines += pq.read_table(file, columns=["text"]).column("text").to_pylist()
+        elif file.name.endswith((".jsonl", ".json", ".jsonl.gz", ".json.gz")):
+            # JSON lines with a "text" field, e.g. C4 shards (c4-validation.00000-of-00008.json.gz). Each record
+            # becomes one entry; without WikiText headings, blocks of records form the bootstrap documents.
+            import gzip
+            import json
+
+            opener = gzip.open if file.suffix == ".gz" else open
+            with opener(file, "rt", encoding="utf-8") as handle:
+                for number, line in enumerate(handle, start=1):
+                    if not line.strip():
+                        continue
+                    try:
+                        lines.append(json.loads(line)["text"].rstrip("\n") + "\n")
+                    except (json.JSONDecodeError, KeyError, TypeError) as error:
+                        raise ValueError(f"{file}:{number}: expected JSON lines, one object with a 'text' field "
+                                         "per line (a single JSON array is not supported)") from error
         else:
             lines += file.read_text(encoding="utf-8").splitlines(keepends=True)
     return lines

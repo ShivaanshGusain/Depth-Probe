@@ -73,12 +73,29 @@ def load_tokenizer(path):
     return AutoTokenizer.from_pretrained(path, local_files_only=True)
 
 
+def permute_block_weights(model, seed):
+    """Matched-statistics control: shuffle the entries of every weight matrix inside the blocks.
+
+    Each matrix keeps its exact set of values (so its scale and norm), but its learned structure is gone.
+    Embeddings, final norm and head are untouched, so the readout still means the same thing.
+    """
+    generator = torch.Generator().manual_seed(seed)
+    for block in find_parts(model).blocks:
+        for parameter in block.parameters():
+            if parameter.ndim >= 2:
+                flat = parameter.data.reshape(-1)
+                order = torch.randperm(flat.numel(), generator=generator).to(flat.device)
+                parameter.data = flat[order].reshape(parameter.shape)
+
+
 def load_model(path, *, dtype="float32", init="pretrained", init_seed=0, device="cpu", attn=None):
     torch_dtype = DTYPES[dtype]
     kwargs = {"attn_implementation": attn} if attn else {}
-    if init == "pretrained":
+    if init in ("pretrained", "permuted"):
         key = "dtype" if Version(transformers.__version__) >= Version("4.56") else "torch_dtype"
         model = AutoModelForCausalLM.from_pretrained(path, local_files_only=True, **{key: torch_dtype}, **kwargs)
+        if init == "permuted":
+            permute_block_weights(model, init_seed)
     elif init == "random":
         # Control E5(i): same architecture, no learning. Seeded on CPU so every machine agrees.
         # Built directly in the requested dtype: a 30B model initialized in float32 first would need ~120 GB.
@@ -132,12 +149,24 @@ def permute_blocks(model, permutation):
 
 
 class ResidualCapture:
-    """Records the residual stream entering block 0 and leaving every block."""
+    """Records the residual stream entering the first block and leaving every block.
 
-    def __init__(self, model):
-        self.blocks = find_parts(model).blocks
+    blocks: an explicit block list (e.g. a segment's) instead of the model's. select: (rows, positions)
+    index tensors; only those token states are kept, which saves memory on long windows.
+    """
+
+    def __init__(self, model=None, *, blocks=None, select=None):
+        self.blocks = find_parts(model).blocks if blocks is None else blocks
+        self.select = select
         self.states = []
         self.handles = []
+
+    def _keep(self, hidden):
+        hidden = hidden.detach()
+        if self.select is None:
+            return hidden.clone()
+        rows, positions = self.select
+        return hidden[rows, positions]  # advanced indexing already copies
 
     def __enter__(self):
         self.states = []
@@ -153,11 +182,11 @@ class ResidualCapture:
 
     def _entering(self, module, args, kwargs):
         hidden = args[0] if args else kwargs["hidden_states"]
-        self.states = [hidden.detach().clone()]
+        self.states = [self._keep(hidden)]
 
     def _leaving(self, module, args, output):
         hidden = output[0] if isinstance(output, tuple) else output
-        self.states.append(hidden.detach().clone())
+        self.states.append(self._keep(hidden))
 
 
 @torch.no_grad()

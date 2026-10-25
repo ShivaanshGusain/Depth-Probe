@@ -2,6 +2,7 @@
 
 import hashlib
 import json
+import math
 import platform
 import sys
 import time
@@ -50,8 +51,19 @@ def environment():
     }
 
 
+def _finite(value):
+    """NaN and infinities become null: strict JSON has no such numbers (Python would write NaN)."""
+    if isinstance(value, float):
+        return value if math.isfinite(value) else None
+    if isinstance(value, dict):
+        return {key: _finite(item) for key, item in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [_finite(item) for item in value]
+    return value
+
+
 def write_json(path, data):
     path = Path(path)
     temporary = path.with_suffix(path.suffix + ".tmp")
-    temporary.write_text(json.dumps(data, indent=2, default=str) + "\n")
+    temporary.write_text(json.dumps(_finite(data), indent=2, default=str, allow_nan=False) + "\n")
     temporary.replace(path)

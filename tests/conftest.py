@@ -3,13 +3,13 @@
 import pytest
 import torch
 from transformers import (GPT2Config, GPT2LMHeadModel, GPTNeoXConfig, GPTNeoXForCausalLM, LlamaConfig,
-                          LlamaForCausalLM, MixtralConfig, MixtralForCausalLM, Qwen3Config, Qwen3ForCausalLM,
-                          Qwen3MoeConfig, Qwen3MoeForCausalLM)
+                          LlamaForCausalLM, MixtralConfig, MixtralForCausalLM, OlmoeConfig, OlmoeForCausalLM,
+                          Qwen3Config, Qwen3ForCausalLM, Qwen3MoeConfig, Qwen3MoeForCausalLM)
 
 VOCAB = 97
 WIDTH = 32
 # Architectures the depth measurements (H1) must support; finetune tests keep the original three.
-H1_KINDS = ["gpt2", "llama", "neox", "qwen3", "qwen3_moe", "mixtral"]
+H1_KINDS = ["gpt2", "llama", "neox", "qwen3", "qwen3_moe", "mixtral", "olmoe"]
 
 
 def tiny_config(kind, **overrides):
@@ -22,10 +22,26 @@ def tiny_config(kind, **overrides):
                               decoder_sparse_step=1, mlp_only_layers=[], **overrides)
     if kind == "mixtral":
         return MixtralConfig(**shared, num_local_experts=4, num_experts_per_tok=2, **overrides)
+    if kind == "olmoe":
+        return OlmoeConfig(**shared, num_experts=4, num_experts_per_tok=2, **overrides)
     raise ValueError(kind)
 
 
-MODEL_CLASSES = {"qwen3": Qwen3ForCausalLM, "qwen3_moe": Qwen3MoeForCausalLM, "mixtral": MixtralForCausalLM}
+MODEL_CLASSES = {"qwen3": Qwen3ForCausalLM, "qwen3_moe": Qwen3MoeForCausalLM, "mixtral": MixtralForCausalLM,
+                 "olmoe": OlmoeForCausalLM}
+
+
+def save_tiny_with_tokenizer(path, kind):
+    """A tiny model plus a four-word tokenizer, saved like a downloaded checkpoint (for CLI tests)."""
+    from tokenizers import Tokenizer
+    from tokenizers.models import WordLevel
+    from tokenizers.pre_tokenizers import Whitespace
+    from transformers import PreTrainedTokenizerFast
+
+    tiny(kind).save_pretrained(path)
+    tokenizer = Tokenizer(WordLevel({"[UNK]": 0, "a": 1, "b": 2, "c": 3}, unk_token="[UNK]"))
+    tokenizer.pre_tokenizer = Whitespace()
+    PreTrainedTokenizerFast(tokenizer_object=tokenizer, unk_token="[UNK]").save_pretrained(path)
 
 
 def tiny(kind):

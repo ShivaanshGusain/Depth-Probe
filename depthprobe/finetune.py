@@ -219,11 +219,12 @@ class ZeroPositions(nn.Module):
         return torch.zeros((*positions.shape, self.width), device=positions.device, dtype=self.anchor.dtype)
 
 
-def make_segment(model, first, last):
+def make_segment(model, first, last, trainable=True):
     """Reuse native backbone forward/masks/rotary embeddings, sharing only selected blocks.
 
     The shallow backbone shell owns a separate module dictionary; changing its
     embeddings/norm/block list does not change the full model's structure.
+    trainable=False leaves the shared blocks' requires_grad flags as they are (inference use).
     """
     validate_range(model, first, last)
     parts = find_parts(model)
@@ -248,8 +249,13 @@ def make_segment(model, first, last):
     for name, module in list(segment._modules.items()):
         if name != parts.blocks_attr:
             segment._modules[name] = copy.deepcopy(module)
-    segment.requires_grad_(False)
-    getattr(segment, parts.blocks_attr).requires_grad_(True)
+    if trainable:
+        segment.requires_grad_(False)
+        getattr(segment, parts.blocks_attr).requires_grad_(True)
+    else:
+        for name, module in segment._modules.items():
+            if name != parts.blocks_attr:
+                module.requires_grad_(False)
     # Disable dropout for deterministic reference matching, without disabling gradients.
     return segment.eval()
 

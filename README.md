@@ -175,6 +175,90 @@ MODEL=$MODELS/qwen3-30b-a3b-base NAME=qwen3-30b-a3b OUT=$OUT WIKI=$DATA/wikitext
   parameters are cast, so float32 buffers such as RoPE frequencies keep full precision.
 - `finetune-segment` trains through the readout and therefore requires `--readout-dtype float32`.
 
+## Denoise test (E6 v1)
+
+Do later layers remove a perturbation added to the residual stream at layer *l*? For each injection
+state, a clean pass records every state; then the suffix blocks run as a segment on the clean state plus
+perturbed copies of it (row group 0 is an in-batch clean reference). v1 tests **denoising** (H1c), not
+diffusion: a manifold attractor passes it too, which is what E7 is for. See `PREREGISTRATION.md`.
+
+```bash
+python -m depthprobe perturb-toys --out runs/toys        # metrics on analytic stacks with known answers
+MODEL=$MODELS/gpt2 WIKI=$DATA/wikitext/wikitext-103-raw-v1 OUT=$OUT bash scripts/perturb_gpt2.sh
+```
+
+The script runs the toys, then the trained model and five controls (random weights, block weights permuted
+entrywise, three shuffled-middle orders), each with its own calibration, then `analyze-perturb`.
+
+| Perturbation (`--families`) | Direction, sized to delta x the token's bulk norm |
+|---|---|
+| `iso` | Random in all bulk coordinates (primary) |
+| `off` / `on` | Low-variance half / top principal directions (90% of variance, at most half the bulk width; the realised share is recorded per state) of the normalized clean states |
+| `read` / `unread` | Directions the final head is / is not sensitive to (same split of its sensitivity) |
+| `shared` / `signed` | One direction for every token / the same with a random sign per token (cross-token averaging) |
+
+Every condition is run with its antithetic pair (+/-), and the same random draws are reused across injection
+sites, sizes and model variants. Massive coordinates are detected per model (at calibration) and left out
+of the noise scale; attention-sink positions are detected in the reference (trained) run and reused by every
+control through `--sinks-from`, so all variants skip the same tokens.
+
+| Metric | Meaning |
+|---|---|
+| `log_survival` | log of the perturbation's size at the last state over its injected size: noise removed in absolute terms |
+| `log_A`, `log_A0`, `log_Lambda` | The same in normalized coordinates; the dilution null (perturbation carried unchanged); their difference |
+| `log_off_net`, `log_on_net` | Survival of the off-/on-manifold component minus its null (the injected perturbation carried unchanged and projected on each state's basis, which absorbs subspace drift); undefined when the injection has (almost) no component there: such tokens are counted out per document (`defined_fraction_off/on` reports the share kept), and the cross pairs (`log_off` of an `on` injection, `log_on` of an `off` injection) are undefined by construction, since what they would measure is only rounding |
+| `content_growth`, `signal_growth` | Growth of the clean state along content directions / in bulk norm: signal added |
+| selectivity | `log A(on) - log A(off)` and `log A(read) - log A(unread)` (also on `log_Lambda`): content kept minus noise kept |
+| `repaired_damage_ratio` | Output KL after the suffix over the output KL of the token's own injected perturbation carried unchanged to the last state (output-space dilution null; perturbations reaching the token from other positions through attention are not in the null); below 1 = repaired |
+| `damage_vs_last_state` | Output KL over that of a same-relative-size perturbation added at the last state (context only) |
+| `nl` | Antithetic nonlinearity: 0 for a linear response (bfloat16 rounding gives small sizes a floor above 0) |
+| `delta_eff` | Realised noise size as the next RMSNorm sees it: over the full norm, massive coordinates included (delta itself is relative to the bulk norm, so this can be smaller) |
+| floor | In-batch clean replica vs the separate clean pass (kernel effects of batch composition) |
+
+All metrics compare the noisy rows with the in-batch clean replica (same kernels), so batch-composition
+effects in bfloat16 or MoE expert grouping cancel; the replica's deviation from the clean pass is the
+reported floor. Controls are run with `--sinks-from <trained run>`, so every variant perturbs and measures
+exactly the same tokens; `analyze-perturb` refuses runs whose data, windows, seed, conditions or measured
+tokens differ (`--allow-different-tokens` overrides the last). The gate counts only deciding controls
+(`--deciding auto`: permuted weights and shuffled orders; random weights are reported only), requires every
+one of them, and combines the PCA and readout definitions with `--rule both|either`. With `auto`, the
+pre-registered set (permuted weights and middle shuffles with seeds 0, 1, 2) must all be among the runs;
+any that is absent is listed as `missing: ...` and the gate fails.
+
+`analyze-perturb RUN [RUN ...]` (trained model first) writes `summary.json`, `cells.csv`, `contrasts.csv`, the
+gate result, and plots: absorption curves per run, selectivity per site with controls, noise removed vs
+signal added, and dose response. Intervals resample documents with the same weights for every run.
+
+### Reproducing the perturbation-absorption result first (arXiv 2606.15161)
+
+Jing et al. replace layer l's output by h + eta * ||h||_F * xi (xi a unit-Frobenius Gaussian over the whole
+layer-output tensor), and report the relative error R_k = ||h~_k - h_k||_F / ||h_k||_F and the absorption
+coefficient r_l = R_L / R_l: at eta = 1e-2 early layers amplify and middle/late layers absorb; at eta = 1e-4
+every layer amplifies (FP16, LLaMA-2-7B, Qwen3-8B and others). `reproduce-absorption` implements that recipe
+and varies the two choices that could create the result without real absorption: FP16 (which resolves about
+5e-4 relative, so eta = 1e-4 is largely rounded away; the summary reports the rounded-away fraction) and
+whole-tensor scaling (which lets attention-sink tokens with massive activations set the noise size).
+
+```bash
+# quick first pass (the defaults): states 1, 12, 24; 16 sequences of 2048 tokens; eta 0, 1e-4, 1e-2; 3 seeds
+MODEL=$MODELS/qwen3-8b DATA=/path/c4-validation.00000-of-00008.json.gz OUT=$OUT bash scripts/reproduce_absorption.sh
+# full sweep, much longer (each run logs its number of suffix passes and a time estimate)
+NAME=absorption-full SITES=all MAX_TOKENS=262144 SEEDS=5 ETAS=0,1e-4,1e-3,1e-2,1e-1 MODEL=... DATA=... OUT=... \
+    bash scripts/reproduce_absorption.sh
+```
+
+Configurations: `paper` (float16, frobenius), `fp32` (float32, frobenius), `fp32-nosink` (frobenius, sinks
+neither perturbed nor measured), `fp32-token` (per-token scaling), `fp32-token-nosink`. Read first:
+`realised_over_eta` (1 when the injected perturbation is what was asked for; FP16 pushes it away from 1),
+`rounded_away_fraction` and `nonfinite_fraction` (windows counted out, not averaged), then the absorption
+`r = R_L / R_l` with its median and ratio of means. `eta = 0` injects nothing and measures the floor of the
+comparison. Each row also gives `absorption_final`, with R_L taken after the final norm, which is what
+HF's last `hidden_states` entry holds. Not stated in the paper and chosen here: probe data, all positions of
+each sequence, injection into the residual stream after block l, one sequence per Frobenius norm, and the
+layer numbering (state l = output of block l; if the paper's "layer 1" is a 0-based block index, it is our
+state 2). `--data` also accepts one JSON-lines shard with a `text` field per line (C4: `allenai/c4`,
+`en/c4-validation.*.json.gz`); pass the file itself, not a directory of shards.
+
 ## Local middle-block fine-tuning
 
 For the memory-constrained staged-training goal and the Pythia/GPT-NeoX pilot,
@@ -373,7 +457,11 @@ depthprobe/
   lens.py        tuned lens: training and evaluation
   measure.py     E0 check and per-token metrics
   analysis.py    bootstrap CIs, monotonicity, gain profile, plots
+  perturb.py     E6 denoise test: calibration, noise, suffix-segment runs, metrics
+  perturb_report.py  E6 statistics, control contrasts, gate, plots
+  toys.py        analytic stacks with known answers for the E6 metrics
+  absorption.py  reproduction of the perturbation-absorption probe (arXiv 2606.15161)
   provenance.py  manifests
-scripts/pilot_gpt2.sh
+scripts/pilot_gpt2.sh, scripts/pilot.sh, scripts/perturb_gpt2.sh, scripts/reproduce_absorption.sh
 PREREGISTRATION.md   thresholds, fixed before confirmatory runs
 ```

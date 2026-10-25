@@ -30,7 +30,9 @@ def add_model_args(parser):
                             "differences (recommended with --dtype bfloat16)")
     group.add_argument("--device", default="auto", help="auto, cpu, cuda, cuda:0, ...")
     group.add_argument("--attn", help="attn_implementation (e.g. eager, sdpa); default: library choice")
-    group.add_argument("--init", choices=["pretrained", "random"], default="pretrained", help="random = E5 control")
+    group.add_argument("--init", choices=["pretrained", "random", "permuted"], default="pretrained",
+                       help="random = untrained control; permuted = pretrained block weights shuffled entrywise "
+                            "(matched-statistics control)")
     group.add_argument("--init-seed", type=int, default=0)
     group.add_argument("--shuffle", choices=["none", "all", "middle"], default="none",
                        help="Shuffle block order (E5 control); middle keeps first and last blocks")
@@ -39,7 +41,8 @@ def add_model_args(parser):
 
 def add_data_args(parser, split, *, max_tokens_flag=True):
     group = parser.add_argument_group("data")
-    group.add_argument("--data", required=True, help="Local parquet directory/file or .txt file")
+    group.add_argument("--data", required=True, help="Local parquet directory/file, .txt file, or one JSON-lines shard "
+                       "(.jsonl/.json[.gz], a 'text' field per line, e.g. C4)")
     group.add_argument("--split", default=split, help="Parquet file prefix inside a directory")
     if max_tokens_flag:
         group.add_argument("--max-tokens", type=int, help="Score at most this many tokens")
@@ -60,7 +63,7 @@ def prepare_dir(path, overwrite):
 
 
 def variant(args):
-    return {"init": args.init, "init_seed": args.init_seed if args.init == "random" else None,
+    return {"init": args.init, "init_seed": args.init_seed if args.init != "pretrained" else None,
             "shuffle": args.shuffle, "shuffle_seed": args.shuffle_seed if args.shuffle != "none" else None}
 
 
@@ -377,6 +380,188 @@ def command_report_segment(args):
     report(args.run_dir, out=args.out, show=args.show)
 
 
+def command_perturb(args):
+    from depthprobe.data import load_corpus
+    from depthprobe.model import hidden_width, n_blocks
+    from depthprobe.perturb import (FAMILIES, calibrate, load_calibration, load_sinks, parse_sites, run_perturbation,
+                                    save_calibration)
+
+    families = [part for part in args.families.split(",") if part]
+    if sorted(set(families) - set(FAMILIES)):
+        sys.exit(f"--families must be drawn from {','.join(FAMILIES)}")
+    deltas = [float(part) for part in args.deltas.split(",") if part]
+    if not deltas or min(deltas) <= 0:
+        sys.exit("--deltas must be positive numbers")
+    if args.every < 1 or args.replicas < 2 or args.replicas % 2:
+        sys.exit("--every must be >= 1 and --replicas an even number >= 2")
+    out = prepare_dir(args.out, args.overwrite)
+    model, tokenizer, readout, bos_id, device, meta = setup(args)
+    sites = parse_sites(args.sites, n_blocks(model))
+    calibration_meta = {"variant": meta["variant"], "permutation": meta["permutation"], "dtype": args.dtype,
+                        "n_states": n_blocks(model) + 1, "width": hidden_width(model),
+                        "config_sha256": model_fingerprint(args.model)["config_sha256"],
+                        "massive_factor": args.massive_factor, "keep_fraction": args.keep_fraction,
+                        "split": args.cal_split, "tokens_requested": args.cal_tokens, "data": str(args.data),
+                        "ctx": args.ctx, "stride": args.stride, "bos_id": bos_id}
+    if args.calibration:
+        calibration, found = load_calibration(args.calibration, device)
+        mismatched = {key: (found.get(key), value) for key, value in calibration_meta.items() if found.get(key) != value}
+        if mismatched:
+            sys.exit(f"Calibration was made for a different model variant or settings (found, wanted): {mismatched}")
+        calibration_meta = {**found, "source": str(Path(args.calibration).resolve())}
+    else:
+        cal = load_corpus(tokenizer, args.data, args.cal_split, max_tokens=args.cal_tokens, joiner=args.joiner)
+        log(f"calibrating on {args.cal_split}: {len(cal.ids)} tokens")
+        calibration = calibrate(model, readout, cal, windows_for(cal, args, bos_id, args.stride),
+                                batch_size=args.batch_size, bos_id=bos_id, device=device,
+                                massive_factor=args.massive_factor, keep_fraction=args.keep_fraction, log=log)
+        calibration_meta = {**calibration_meta, "tokens": calibration["tokens"]}
+        save_calibration(out / "calibration.pt", calibration, calibration_meta)
+        calibration_meta = {**calibration_meta, "source": str((out / "calibration.pt").resolve())}
+    fixed_sinks = None
+    if args.sinks_from:
+        fixed_sinks = load_sinks(Path(args.sinks_from) / "perturb.npz")
+        log(f"using the measured tokens and sink positions of {args.sinks_from}")
+    corpus = load_corpus(tokenizer, args.data, args.split, max_tokens=args.max_tokens, joiner=args.joiner)
+    windows = windows_for(corpus, args, bos_id, args.stride)[::args.every]
+    log(f"perturbing {len(windows)} windows from {args.split}; sites {sites}; families {families}; deltas {deltas}")
+    arrays, result = run_perturbation(model, readout, corpus, windows, calibration, sites=sites, families=families,
+                                      deltas=deltas, seed=args.seed, batch_size=args.batch_size, bos_id=bos_id,
+                                      replicas=args.replicas, min_context=args.min_context,
+                                      sink_factor=args.sink_factor, chunk=args.chunk, device=device,
+                                      fixed_sinks=fixed_sinks, log=log)
+    np.savez(out / "perturb.npz", **arrays)
+    write_json(out / "manifest.json", manifest(args, meta, perturb=result, calibration=calibration_meta,
+                                               corpus={"tokens": len(corpus.ids), "documents": corpus.n_docs,
+                                                       "windows": len(windows)}))
+    log(f"{result['measured_tokens']} measured tokens over {result['documents']} documents; "
+        f"largest in-batch clean-replica deviation {result['floor_max']:.3g} (relative to the bulk norm)")
+
+
+def command_analyze_perturb(args):
+    from depthprobe.perturb_report import DocSums, contrasts, gate, load_perturb_run, plot, summarize_run, write_tables
+
+    loaded = [load_perturb_run(path) for path in args.runs]
+    labels = [run_manifest["args"].get("label") or Path(path).name for path, (run_manifest, _) in zip(args.runs, loaded)]
+    if len(set(labels)) != len(labels):
+        sys.exit(f"Run labels must be unique: {labels}")
+    reference = args.reference or labels[0]
+    if reference not in labels:
+        sys.exit(f"Reference {reference!r} is not among the runs {labels}")
+    first_manifest, first_arrays = loaded[labels.index(reference)]
+    same_args = ("data", "split", "every", "ctx", "stride", "min_context", "max_tokens", "prepend_bos", "joiner")
+    for label, (run_manifest, arrays) in zip(labels, loaded):
+        differing = [key for key in same_args if run_manifest["args"].get(key) != first_manifest["args"].get(key)]
+        if run_manifest["perturb"]["seed"] != first_manifest["perturb"]["seed"]:
+            differing.append("seed")
+        if run_manifest["perturb"]["conditions"] != first_manifest["perturb"]["conditions"]:
+            differing.append("conditions (sites, families or deltas)")
+        if arrays["counts"].shape != first_arrays["counts"].shape:
+            differing.append("number of documents")
+        elif not args.allow_different_tokens and not np.array_equal(arrays["counts"], first_arrays["counts"]):
+            differing.append("measured tokens (run controls with --sinks-from the reference run)")
+        if differing:
+            sys.exit(f"Run {label!r} is not comparable with {reference!r}: {differing}")
+        if args.delta not in run_manifest["perturb"]["deltas"]:
+            sys.exit(f"--delta {args.delta} was not measured in {label!r} (deltas {run_manifest['perturb']['deltas']})")
+    out = prepare_dir(args.out, args.overwrite)
+    keep = np.any([arrays["counts"] > 0 for _, arrays in loaded], axis=0)  # one document set for every run
+    runs = []
+    for label, (run_manifest, arrays) in zip(labels, loaded):
+        boot = DocSums(arrays["counts"], args.bootstrap, args.seed, keep=keep)
+        summary, store = summarize_run(run_manifest, arrays, boot)
+        runs.append({"label": label, "manifest": run_manifest, "summary": summary, "store": store})
+    if not 1 <= args.min_sites <= len(first_manifest["perturb"]["sites"]):
+        sys.exit(f"--min-sites must lie in 1..{len(first_manifest['perturb']['sites'])} (the measured sites)")
+    if args.deciding == "auto":  # permuted weights and shuffled orders decide; random weights are reported only
+        variants = {run["label"]: run["manifest"].get("variant") or {} for run in runs if run["label"] != reference}
+        deciding = [label for label, v in variants.items()
+                    if v.get("init") == "permuted" or v.get("shuffle", "none") != "none"]
+        # The pre-registered set must be complete: a gate passed against a subset of it is not the gate.
+        required = [("permuted weights", lambda v: v.get("init") == "permuted")] + [
+            (f"shuffled middle seed {s}", lambda v, s=s: v.get("shuffle") == "middle" and v.get("shuffle_seed") == s)
+            for s in (0, 1, 2)]
+        deciding += [f"missing: {name}" for name, wanted in required if not any(map(wanted, variants.values()))]
+    else:
+        deciding = [label for label in args.deciding.split(",") if label]
+        unknown = [label for label in deciding if label not in labels or label == reference]
+        if unknown:
+            sys.exit(f"--deciding names runs that are missing or the reference: {unknown}")
+    contrast_rows = contrasts(runs, reference)
+    decision = gate(contrast_rows, deciding, args.delta, args.margin, args.min_sites, args.rule)
+    write_json(out / "summary.json", {"command": "analyze-perturb", "args": vars(args), "reference": reference,
+                                      "runs": [{"label": r["label"], "variant": r["manifest"].get("variant"),
+                                                "perturb_meta": {k: v for k, v in r["manifest"]["perturb"].items()
+                                                                 if k != "conditions"},
+                                                **r["summary"]} for r in runs],
+                                      "contrasts": contrast_rows, "gate": decision})
+    write_tables(out, runs, contrast_rows)
+    plot(out, runs, args.delta)
+    for control, definitions in decision["per_control"].items():
+        details = ", ".join(f"{name} {entry['sites_passing']}/{entry['sites']}" for name, entry in definitions.items()
+                            if isinstance(entry, dict))
+        log(f"gate vs {control} ({'deciding' if definitions['deciding'] else 'reported only'}): {details} sites pass "
+            f"-> {'PASS' if definitions['passes'] else 'fail'}")
+    log(f"GATE ({args.rule} definitions, delta {args.delta}, margin {args.margin}, >= {args.min_sites} sites): "
+        f"{'PASS' if decision['passes'] else 'FAIL'}" + (f" ({'; '.join(decision['reasons'])})" if decision["reasons"] else ""))
+    log(f"wrote {out}")
+
+
+def command_reproduce_absorption(args):
+    from depthprobe.absorption import plot as plot_absorption
+    from depthprobe.absorption import run_absorption, summarize as summarize_absorption
+    from depthprobe.data import load_corpus
+    from depthprobe.model import n_blocks
+    from depthprobe.perturb import parse_sites
+
+    etas = [float(part) for part in args.etas.split(",") if part]
+    if not etas or min(etas) < 0 or len(set(etas)) != len(etas) or args.seeds < 1 or args.every < 1 \
+            or args.replicas < 1:
+        sys.exit("--etas must be distinct and >= 0 (0 measures the floor); --seeds, --every, --replicas at least 1")
+    out = prepare_dir(args.out, args.overwrite)
+    model, tokenizer, _, bos_id, device, meta = setup(args)
+    sites = parse_sites(args.sites, n_blocks(model))
+    corpus = load_corpus(tokenizer, args.data, args.split, max_tokens=args.max_tokens, joiner=args.joiner)
+    windows = windows_for(corpus, args, bos_id, args.stride)[::args.every]
+    passes = -(-len(windows) // args.batch_size) * len(sites) * -(-len(etas) * args.seeds // args.replicas)
+    log(f"absorption probe: {len(windows)} windows, sites {sites}, etas {etas}, {args.seeds} seeds, "
+        f"dtype {args.dtype}, scale {args.scale}: {passes} suffix passes of {args.replicas + 1} copies")
+    arrays, result = run_absorption(model, corpus, windows, sites=sites, etas=etas, seeds=args.seeds,
+                                    batch_size=args.batch_size, bos_id=bos_id, device=device, scale=args.scale,
+                                    exclude_sinks=args.exclude_sinks, sink_factor=args.sink_factor,
+                                    replicas=args.replicas, log=log)
+    rows = summarize_absorption(arrays, result, n_boot=args.bootstrap)
+    np.savez(out / "absorption.npz", **arrays)
+    label = args.label or out.name
+    write_json(out / "manifest.json", manifest(args, meta, absorption=result, summary=rows,
+                                               corpus={"tokens": len(corpus.ids), "documents": corpus.n_docs,
+                                                       "windows": len(windows)}))
+    plot_absorption(out, rows, result, label)
+    def show(value):
+        return "-" if value is None else f"{value:.3g}"
+
+    for row in rows:
+        log(f"site {row['site']:>3} eta {row['eta']:g}: realised/eta {show(row['realised_over_eta'])}, "
+            f"rounded away {show(row['rounded_away_fraction'])}, non-finite {show(row['nonfinite_fraction'])}, "
+            f"R_L {show(row['R_last'])}, r = R_L/R_l {show(row['absorption'])} "
+            f"(after final norm {show(row.get('absorption_final'))})")
+    log(f"largest in-batch clean-replica deviation {result['floor_max']:.3g}; wrote {out}")
+
+
+def command_perturb_toys(args):
+    from depthprobe.toys import toy_signatures
+
+    out = prepare_dir(args.out, args.overwrite)
+    results = toy_signatures(site=args.site, delta=args.delta, seed=args.seed)
+    write_json(out / "toys.json", results)
+    log(f"{'toy':<20} {'iso surv':>9} {'off surv':>9} {'on surv':>9} {'sel raw':>8} {'sel A':>8} {'sel Lam':>8} "
+        f"{'expected off':>13}")
+    for name, row in results.items():
+        log(f"{name:<20} {row['iso']['log_survival']:>9.3f} {row['off']['log_survival']:>9.3f} "
+            f"{row['on']['log_survival']:>9.3f} {row['selectivity']:>8.3f} {row['selectivity_A']:>8.3f} "
+            f"{row['selectivity_Lambda']:>8.3f} {row['expected_off_survival']:>13.3f}")
+
+
 def parser():
     root = argparse.ArgumentParser(prog="depthprobe", description=__doc__)
     commands = root.add_subparsers(dest="command", required=True)
@@ -482,6 +667,81 @@ def parser():
     report.add_argument("--out", help="Report directory (default: RUN/report)")
     report.add_argument("--show", action="store_true", help="Also open an interactive matplotlib window")
     report.set_defaults(run=command_report_segment)
+
+    perturb = commands.add_parser("perturb", help="E6 denoise test: inject noise at each layer, measure what remains")
+    add_model_args(perturb)
+    add_data_args(perturb, "test")
+    perturb.add_argument("--sites", default="all", help="Injection states, 'all' or e.g. 0,3,6,9")
+    perturb.add_argument("--families", default="iso,off,on,read,unread,shared,signed",
+                         help="Perturbation directions (see README)")
+    perturb.add_argument("--deltas", default="0.03,0.1,0.3,1.0", help="Noise sizes relative to each token's bulk norm")
+    perturb.add_argument("--seed", type=int, default=0, help="Noise seed (draws are shared across sites and variants)")
+    perturb.add_argument("--every", type=int, default=4, help="Keep every Nth window")
+    perturb.add_argument("--replicas", type=int, default=8, help="Perturbed copies per suffix pass (even)")
+    perturb.add_argument("--min-context", type=int, default=64, help="Measure only tokens with this much context")
+    perturb.add_argument("--sink-factor", type=float, default=10.0,
+                         help="A token whose peak activation exceeds this multiple of the window median is a sink")
+    perturb.add_argument("--calibration", help="Reuse calibration.pt from an earlier run of the same variant")
+    perturb.add_argument("--sinks-from", help="Earlier perturb run whose sink positions (and so measured tokens) "
+                                              "to reuse; pass the trained-model run for every control")
+    perturb.add_argument("--cal-split", default="validation")
+    perturb.add_argument("--cal-tokens", type=int, default=50_000)
+    perturb.add_argument("--massive-factor", type=float, default=20.0,
+                         help="A coordinate whose mean |value| exceeds this multiple of the median is massive")
+    perturb.add_argument("--keep-fraction", type=float, default=0.9, help="Variance share of the on-manifold subspace")
+    perturb.add_argument("--label", help="Name used in reports (default: output directory name)")
+    perturb.add_argument("--out", required=True)
+    perturb.add_argument("--overwrite", action="store_true")
+    perturb.set_defaults(run=command_perturb)
+
+    report_perturb = commands.add_parser("analyze-perturb", help="E6 statistics, controls contrasts and plots")
+    report_perturb.add_argument("runs", nargs="+", help="Output directories of perturb (trained model first)")
+    report_perturb.add_argument("--reference", help="Label of the trained-model run (default: the first run)")
+    report_perturb.add_argument("--delta", type=float, default=0.1, help="Primary noise size for the gate and plots")
+    report_perturb.add_argument("--margin", type=float, default=0.22,
+                                help="Gate: trained-minus-control selectivity must exceed this (log units)")
+    report_perturb.add_argument("--min-sites", type=int, default=3, help="Gate: sites that must pass, per control")
+    report_perturb.add_argument("--rule", choices=["both", "either"], default="both",
+                                help="Gate: selectivity must pass under both definitions (PCA and readout) or either")
+    report_perturb.add_argument("--deciding", default="auto",
+                                help="Comma-separated control labels that decide the gate; 'auto' = permuted and "
+                                     "shuffled variants (random weights are reported only)")
+    report_perturb.add_argument("--allow-different-tokens", action="store_true",
+                                help="Compare runs whose measured tokens differ (not recommended)")
+    report_perturb.add_argument("--bootstrap", type=int, default=1000)
+    report_perturb.add_argument("--seed", type=int, default=0)
+    report_perturb.add_argument("--out", required=True)
+    report_perturb.add_argument("--overwrite", action="store_true")
+    report_perturb.set_defaults(run=command_analyze_perturb)
+
+    absorb = commands.add_parser("reproduce-absorption",
+                                 help="Reproduce the perturbation-absorption probe of arXiv 2606.15161")
+    add_model_args(absorb)
+    add_data_args(absorb, "test")
+    absorb.add_argument("--sites", default="all", help="Injection states, 'all' or e.g. 1,12,24")
+    absorb.add_argument("--etas", default="0,1e-4,1e-3,1e-2,1e-1",
+                        help="Noise sizes eta (the paper shows 1e-4, 1e-2); 0 measures the numerical floor")
+    absorb.add_argument("--seeds", type=int, default=5, help="Noise directions per eta (the paper uses 5)")
+    absorb.add_argument("--scale", choices=["frobenius", "token"], default="frobenius",
+                        help="frobenius = the paper (eta x norm of the whole sequence tensor); token = per token")
+    absorb.add_argument("--exclude-sinks", action="store_true",
+                        help="Neither perturb nor measure attention-sink positions (not in the paper)")
+    absorb.add_argument("--sink-factor", type=float, default=10.0)
+    absorb.add_argument("--every", type=int, default=1, help="Keep every Nth window")
+    absorb.add_argument("--replicas", type=int, default=4, help="Perturbed copies per suffix pass")
+    absorb.add_argument("--bootstrap", type=int, default=1000)
+    absorb.add_argument("--label")
+    absorb.add_argument("--out", required=True)
+    absorb.add_argument("--overwrite", action="store_true")
+    absorb.set_defaults(run=command_reproduce_absorption)
+
+    toys = commands.add_parser("perturb-toys", help="Run the E6 metrics on analytic stacks with known answers")
+    toys.add_argument("--site", type=int, default=3)
+    toys.add_argument("--delta", type=float, default=0.05)
+    toys.add_argument("--seed", type=int, default=0)
+    toys.add_argument("--out", required=True)
+    toys.add_argument("--overwrite", action="store_true")
+    toys.set_defaults(run=command_perturb_toys)
     return root
 
 
