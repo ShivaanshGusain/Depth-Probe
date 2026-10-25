@@ -1,0 +1,101 @@
+[absorption] paper
+Loading weights:   0%|          | 0/399 [00:00<?, ?it/s]Loading weights:   1%|          | 2/399 [00:00<00:22, 17.49it/s]Loading weights:  22%|██▏       | 88/399 [00:00<00:00, 473.47it/s]Loading weights:  37%|███▋      | 148/399 [00:00<00:00, 526.70it/s]Loading weights:  53%|█████▎    | 210/399 [00:00<00:00, 559.85it/s]Loading weights:  68%|██████▊   | 271/399 [00:00<00:00, 561.93it/s]Loading weights:  84%|████████▍ | 335/399 [00:00<00:00, 586.96it/s]Loading weights: 100%|██████████| 399/399 [00:00<00:00, 558.49it/s]
+[10:32:03] absorption probe: 16 windows, sites [1, 12, 24], etas [0.0, 0.0001, 0.001, 0.01], 3 seeds, dtype float16, scale frobenius: 144 suffix passes of 5 copies
+[10:32:30] absorption probe: 1/16 windows, 0.5 min, about 6.8 min left
+[10:34:41] absorption probe: 6/16 windows, 2.6 min, about 4.4 min left
+[10:36:52] absorption probe: 11/16 windows, 4.8 min, about 2.2 min left
+[10:39:04] absorption probe: 16/16 windows, 7.0 min, about 0.0 min left
+[10:39:04] site   1 eta 0: realised/eta -, rounded away -, non-finite 0, R_L 0, r = R_L/R_l - (after final norm -)
+[10:39:04] site   1 eta 0.0001: realised/eta 0.903, rounded away 0, non-finite 0, R_L 0.00146, r = R_L/R_l 16.2 (after final norm 18.8)
+[10:39:04] site   1 eta 0.001: realised/eta 1.01, rounded away 0, non-finite 0, R_L 0.00162, r = R_L/R_l 1.61 (after final norm 1.88)
+[10:39:04] site   1 eta 0.01: realised/eta 1, rounded away 0, non-finite 0, R_L 0.00352, r = R_L/R_l 0.352 (after final norm 0.406)
+[10:39:04] site  12 eta 0: realised/eta -, rounded away -, non-finite 0, R_L 0, r = R_L/R_l - (after final norm -)
+[10:39:04] site  12 eta 0.0001: realised/eta 1.03, rounded away 0, non-finite 0, R_L 0.00106, r = R_L/R_l 10.3 (after final norm 11.7)
+[10:39:04] site  12 eta 0.001: realised/eta 1, rounded away 0, non-finite 0, R_L 0.0016, r = R_L/R_l 1.6 (after final norm 1.84)
+[10:39:04] site  12 eta 0.01: realised/eta 1, rounded away 0, non-finite 0, R_L 0.0101, r = R_L/R_l 1.01 (after final norm 1.13)
+[10:39:04] site  24 eta 0: realised/eta -, rounded away -, non-finite 0, R_L 0, r = R_L/R_l - (after final norm -)
+[10:39:04] site  24 eta 0.0001: realised/eta 1.02, rounded away 0, non-finite 0, R_L 0.000819, r = R_L/R_l 8.02 (after final norm 9.38)
+[10:39:04] site  24 eta 0.001: realised/eta 1, rounded away 0, non-finite 0, R_L 0.00111, r = R_L/R_l 1.11 (after final norm 1.24)
+[10:39:04] site  24 eta 0.01: realised/eta 1, rounded away 0, non-finite 0, R_L 0.00653, r = R_L/R_l 0.653 (after final norm 0.685)
+[10:39:04] largest in-batch clean-replica deviation 0; wrote /workspace/CloudFare/Depth-Probe/storage/runs/absorption/paper
+[absorption] fp32
+Loading weights:   0%|          | 0/399 [00:00<?, ?it/s]Loading weights:   0%|          | 1/399 [00:00<01:10,  5.61it/s]Loading weights:  16%|█▌        | 64/399 [00:00<00:01, 282.35it/s]Loading weights:  26%|██▋       | 105/399 [00:00<00:00, 330.73it/s]Loading weights:  36%|███▌      | 144/399 [00:00<00:00, 339.51it/s]Loading weights:  46%|████▌     | 182/399 [00:00<00:00, 352.78it/s]Loading weights:  56%|█████▌    | 223/399 [00:00<00:00, 358.59it/s]Loading weights:  65%|██████▌   | 261/399 [00:00<00:00, 352.30it/s]Loading weights:  76%|███████▌  | 302/399 [00:00<00:00, 363.21it/s]Loading weights:  86%|████████▌ | 344/399 [00:01<00:00, 370.79it/s]Loading weights:  96%|█████████▌| 384/399 [00:01<00:00, 375.62it/s]Loading weights: 100%|██████████| 399/399 [00:01<00:00, 341.01it/s]
+[10:39:17] absorption probe: 16 windows, sites [1, 12, 24], etas [0.0, 0.0001, 0.001, 0.01], 3 seeds, dtype float32, scale frobenius: 144 suffix passes of 5 copies
+[10:41:37] absorption probe: 1/16 windows, 2.3 min, about 35.0 min left
+[10:53:02] absorption probe: 6/16 windows, 13.8 min, about 22.9 min left
+[11:04:25] absorption probe: 11/16 windows, 25.1 min, about 11.4 min left
+[11:15:48] absorption probe: 16/16 windows, 36.5 min, about 0.0 min left
+[11:15:49] site   1 eta 0: realised/eta -, rounded away -, non-finite 0, R_L 0, r = R_L/R_l - (after final norm -)
+[11:15:49] site   1 eta 0.0001: realised/eta 1, rounded away 0, non-finite 0, R_L 3.46e-05, r = R_L/R_l 0.346 (after final norm 0.415)
+[11:15:49] site   1 eta 0.001: realised/eta 1, rounded away 0, non-finite 0, R_L 0.000334, r = R_L/R_l 0.334 (after final norm 0.397)
+[11:15:49] site   1 eta 0.01: realised/eta 1, rounded away 0, non-finite 0, R_L 0.00307, r = R_L/R_l 0.307 (after final norm 0.356)
+[11:15:49] site  12 eta 0: realised/eta -, rounded away -, non-finite 0, R_L 0, r = R_L/R_l - (after final norm -)
+[11:15:49] site  12 eta 0.0001: realised/eta 1, rounded away 0, non-finite 0, R_L 0.000112, r = R_L/R_l 1.12 (after final norm 1.29)
+[11:15:49] site  12 eta 0.001: realised/eta 1, rounded away 0, non-finite 0, R_L 0.00115, r = R_L/R_l 1.15 (after final norm 1.34)
+[11:15:49] site  12 eta 0.01: realised/eta 1, rounded away 0, non-finite 0, R_L 0.00998, r = R_L/R_l 0.998 (after final norm 1.11)
+[11:15:49] site  24 eta 0: realised/eta -, rounded away -, non-finite 0, R_L 0, r = R_L/R_l - (after final norm -)
+[11:15:49] site  24 eta 0.0001: realised/eta 1, rounded away 0, non-finite 0, R_L 6.45e-05, r = R_L/R_l 0.645 (after final norm 0.675)
+[11:15:49] site  24 eta 0.001: realised/eta 1, rounded away 0, non-finite 0, R_L 0.000644, r = R_L/R_l 0.644 (after final norm 0.674)
+[11:15:49] site  24 eta 0.01: realised/eta 1, rounded away 0, non-finite 0, R_L 0.00644, r = R_L/R_l 0.644 (after final norm 0.674)
+[11:15:49] largest in-batch clean-replica deviation 7.61e-06; wrote /workspace/CloudFare/Depth-Probe/storage/runs/absorption/fp32
+[absorption] fp32-nosink
+Loading weights:   0%|          | 0/399 [00:00<?, ?it/s]Loading weights:   0%|          | 1/399 [00:00<01:24,  4.71it/s]Loading weights:  13%|█▎        | 50/399 [00:00<00:01, 196.68it/s]Loading weights:  23%|██▎       | 92/399 [00:00<00:01, 277.24it/s]Loading weights:  32%|███▏      | 127/399 [00:00<00:00, 298.10it/s]Loading weights:  42%|████▏     | 169/399 [00:00<00:00, 322.21it/s]Loading weights:  53%|█████▎    | 211/399 [00:00<00:00, 340.93it/s]Loading weights:  63%|██████▎   | 253/399 [00:00<00:00, 364.44it/s]Loading weights:  73%|███████▎  | 291/399 [00:00<00:00, 349.84it/s]Loading weights:  83%|████████▎ | 333/399 [00:01<00:00, 364.68it/s]Loading weights:  93%|█████████▎| 371/399 [00:01<00:00, 367.77it/s]Loading weights: 100%|██████████| 399/399 [00:01<00:00, 324.10it/s]
+[11:15:59] absorption probe: 16 windows, sites [1, 12, 24], etas [0.0, 0.0001, 0.001, 0.01], 3 seeds, dtype float32, scale frobenius: 144 suffix passes of 5 copies
+[11:18:19] absorption probe: 1/16 windows, 2.3 min, about 35.0 min left
+[11:29:39] absorption probe: 6/16 windows, 13.7 min, about 22.8 min left
+[11:40:59] absorption probe: 11/16 windows, 25.0 min, about 11.4 min left
+[11:52:19] absorption probe: 16/16 windows, 36.3 min, about 0.0 min left
+[11:52:20] site   1 eta 0: realised/eta -, rounded away -, non-finite 0, R_L 0, r = R_L/R_l - (after final norm -)
+[11:52:20] site   1 eta 0.0001: realised/eta 1, rounded away 0, non-finite 0, R_L 3.47e-05, r = R_L/R_l 0.347 (after final norm 0.414)
+[11:52:20] site   1 eta 0.001: realised/eta 1, rounded away 0, non-finite 0, R_L 0.000333, r = R_L/R_l 0.333 (after final norm 0.394)
+[11:52:20] site   1 eta 0.01: realised/eta 1, rounded away 0, non-finite 0, R_L 0.00305, r = R_L/R_l 0.305 (after final norm 0.351)
+[11:52:20] site  12 eta 0: realised/eta -, rounded away -, non-finite 0, R_L 0, r = R_L/R_l - (after final norm -)
+[11:52:20] site  12 eta 0.0001: realised/eta 1, rounded away 0, non-finite 0, R_L 3.09e-05, r = R_L/R_l 0.309 (after final norm 0.355)
+[11:52:20] site  12 eta 0.001: realised/eta 1, rounded away 0, non-finite 0, R_L 0.000311, r = R_L/R_l 0.311 (after final norm 0.359)
+[11:52:20] site  12 eta 0.01: realised/eta 1, rounded away 0, non-finite 0, R_L 0.00315, r = R_L/R_l 0.315 (after final norm 0.368)
+[11:52:20] site  24 eta 0: realised/eta -, rounded away -, non-finite 0, R_L 0, r = R_L/R_l - (after final norm -)
+[11:52:20] site  24 eta 0.0001: realised/eta 1, rounded away 0, non-finite 0, R_L 3.34e-05, r = R_L/R_l 0.334 (after final norm 0.354)
+[11:52:20] site  24 eta 0.001: realised/eta 1, rounded away 0, non-finite 0, R_L 0.000333, r = R_L/R_l 0.333 (after final norm 0.354)
+[11:52:20] site  24 eta 0.01: realised/eta 1, rounded away 0, non-finite 0, R_L 0.00333, r = R_L/R_l 0.333 (after final norm 0.353)
+[11:52:20] largest in-batch clean-replica deviation 9.31e-06; wrote /workspace/CloudFare/Depth-Probe/storage/runs/absorption/fp32-nosink
+[absorption] fp32-token
+Loading weights:   0%|          | 0/399 [00:00<?, ?it/s]Loading weights:   0%|          | 1/399 [00:00<01:36,  4.13it/s]Loading weights:  18%|█▊        | 70/399 [00:00<00:01, 251.04it/s]Loading weights:  27%|██▋       | 108/399 [00:00<00:00, 293.82it/s]Loading weights:  37%|███▋      | 146/399 [00:00<00:00, 316.90it/s]Loading weights:  48%|████▊     | 190/399 [00:00<00:00, 350.29it/s]Loading weights:  57%|█████▋    | 229/399 [00:00<00:00, 358.24it/s]Loading weights:  67%|██████▋   | 268/399 [00:00<00:00, 350.59it/s]Loading weights:  78%|███████▊  | 311/399 [00:00<00:00, 368.66it/s]Loading weights:  88%|████████▊ | 350/399 [00:01<00:00, 373.66it/s]Loading weights:  97%|█████████▋| 389/399 [00:01<00:00, 362.49it/s]Loading weights: 100%|██████████| 399/399 [00:01<00:00, 330.87it/s]
+[11:52:29] absorption probe: 16 windows, sites [1, 12, 24], etas [0.0, 0.0001, 0.001, 0.01], 3 seeds, dtype float32, scale token: 144 suffix passes of 5 copies
+[11:54:48] absorption probe: 1/16 windows, 2.3 min, about 34.8 min left
+[12:06:05] absorption probe: 6/16 windows, 13.6 min, about 22.7 min left
+[12:17:23] absorption probe: 11/16 windows, 24.9 min, about 11.3 min left
+[12:28:40] absorption probe: 16/16 windows, 36.2 min, about 0.0 min left
+[12:28:40] site   1 eta 0: realised/eta -, rounded away -, non-finite 0, R_L 0, r = R_L/R_l - (after final norm -)
+[12:28:40] site   1 eta 0.0001: realised/eta 1, rounded away 0, non-finite 0, R_L 3.13e-05, r = R_L/R_l 0.313 (after final norm 0.375)
+[12:28:40] site   1 eta 0.001: realised/eta 1, rounded away 0, non-finite 0, R_L 0.000303, r = R_L/R_l 0.303 (after final norm 0.36)
+[12:28:40] site   1 eta 0.01: realised/eta 1, rounded away 0, non-finite 0, R_L 0.00287, r = R_L/R_l 0.287 (after final norm 0.332)
+[12:28:40] site  12 eta 0: realised/eta -, rounded away -, non-finite 0, R_L 0, r = R_L/R_l - (after final norm -)
+[12:28:40] site  12 eta 0.0001: realised/eta 1, rounded away 0, non-finite 0, R_L 0.000112, r = R_L/R_l 1.12 (after final norm 1.17)
+[12:28:40] site  12 eta 0.001: realised/eta 1, rounded away 0, non-finite 0, R_L 0.00112, r = R_L/R_l 1.12 (after final norm 1.18)
+[12:28:40] site  12 eta 0.01: realised/eta 1, rounded away 0, non-finite 0, R_L 0.0111, r = R_L/R_l 1.11 (after final norm 1.17)
+[12:28:40] site  24 eta 0: realised/eta -, rounded away -, non-finite 0, R_L 0, r = R_L/R_l - (after final norm -)
+[12:28:40] site  24 eta 0.0001: realised/eta 1, rounded away 0, non-finite 0, R_L 0.000107, r = R_L/R_l 1.07 (after final norm 1.13)
+[12:28:40] site  24 eta 0.001: realised/eta 1, rounded away 0, non-finite 0, R_L 0.00107, r = R_L/R_l 1.07 (after final norm 1.13)
+[12:28:40] site  24 eta 0.01: realised/eta 1, rounded away 0, non-finite 0, R_L 0.0107, r = R_L/R_l 1.07 (after final norm 1.13)
+[12:28:40] largest in-batch clean-replica deviation 7.61e-06; wrote /workspace/CloudFare/Depth-Probe/storage/runs/absorption/fp32-token
+[absorption] fp32-token-nosink
+Loading weights:   0%|          | 0/399 [00:00<?, ?it/s]Loading weights:   0%|          | 1/399 [00:00<01:41,  3.93it/s]Loading weights:  15%|█▌        | 61/399 [00:00<00:01, 216.99it/s]Loading weights:  26%|██▌       | 103/399 [00:00<00:01, 283.76it/s]Loading weights:  35%|███▌      | 141/399 [00:00<00:00, 312.33it/s]Loading weights:  45%|████▍     | 179/399 [00:00<00:00, 325.90it/s]Loading weights:  54%|█████▍    | 216/399 [00:00<00:00, 337.06it/s]Loading weights:  64%|██████▍   | 257/399 [00:00<00:00, 341.35it/s]Loading weights:  75%|███████▍  | 299/399 [00:00<00:00, 362.50it/s]Loading weights:  84%|████████▍ | 337/399 [00:01<00:00, 359.69it/s]Loading weights:  94%|█████████▍| 377/399 [00:01<00:00, 370.11it/s]Loading weights: 100%|██████████| 399/399 [00:01<00:00, 321.25it/s]
+[12:28:50] absorption probe: 16 windows, sites [1, 12, 24], etas [0.0, 0.0001, 0.001, 0.01], 3 seeds, dtype float32, scale token: 144 suffix passes of 5 copies
+[12:31:10] absorption probe: 1/16 windows, 2.3 min, about 34.9 min left
+[12:42:26] absorption probe: 6/16 windows, 13.6 min, about 22.7 min left
+[12:53:42] absorption probe: 11/16 windows, 24.9 min, about 11.3 min left
+[13:04:59] absorption probe: 16/16 windows, 36.1 min, about 0.0 min left
+[13:04:59] site   1 eta 0: realised/eta -, rounded away -, non-finite 0, R_L 0, r = R_L/R_l - (after final norm -)
+[13:04:59] site   1 eta 0.0001: realised/eta 1, rounded away 0, non-finite 0, R_L 3.1e-05, r = R_L/R_l 0.31 (after final norm 0.369)
+[13:04:59] site   1 eta 0.001: realised/eta 1, rounded away 0, non-finite 0, R_L 0.0003, r = R_L/R_l 0.3 (after final norm 0.356)
+[13:04:59] site   1 eta 0.01: realised/eta 1, rounded away 0, non-finite 0, R_L 0.0028, r = R_L/R_l 0.28 (after final norm 0.325)
+[13:04:59] site  12 eta 0: realised/eta -, rounded away -, non-finite 0, R_L 0, r = R_L/R_l - (after final norm -)
+[13:04:59] site  12 eta 0.0001: realised/eta 1, rounded away 0, non-finite 0, R_L 2.87e-05, r = R_L/R_l 0.287 (after final norm 0.325)
+[13:04:59] site  12 eta 0.001: realised/eta 1, rounded away 0, non-finite 0, R_L 0.000288, r = R_L/R_l 0.288 (after final norm 0.328)
+[13:04:59] site  12 eta 0.01: realised/eta 1, rounded away 0, non-finite 0, R_L 0.00298, r = R_L/R_l 0.298 (after final norm 0.346)
+[13:04:59] site  24 eta 0: realised/eta -, rounded away -, non-finite 0, R_L 0, r = R_L/R_l - (after final norm -)
+[13:04:59] site  24 eta 0.0001: realised/eta 1, rounded away 0, non-finite 0, R_L 3.13e-05, r = R_L/R_l 0.313 (after final norm 0.335)
+[13:04:59] site  24 eta 0.001: realised/eta 1, rounded away 0, non-finite 0, R_L 0.000313, r = R_L/R_l 0.313 (after final norm 0.334)
+[13:04:59] site  24 eta 0.01: realised/eta 1, rounded away 0, non-finite 0, R_L 0.00314, r = R_L/R_l 0.314 (after final norm 0.335)
+[13:04:59] largest in-batch clean-replica deviation 9.31e-06; wrote /workspace/CloudFare/Depth-Probe/storage/runs/absorption/fp32-token-nosink
+[absorption] done: compare /workspace/CloudFare/Depth-Probe/storage/runs/absorption/*/absorption.png and the r_l values in each manifest.json
