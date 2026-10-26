@@ -1,0 +1,634 @@
+{
+  "command": "analyze-absorption",
+  "args": {
+    "command": "analyze-absorption",
+    "runs": [
+      "/workspace/CloudFare/Depth-Probe/storage/runs/absorption-tests/trained",
+      "/workspace/CloudFare/Depth-Probe/storage/runs/absorption-tests/random",
+      "/workspace/CloudFare/Depth-Probe/storage/runs/absorption-tests/permuted"
+    ],
+    "reference": "trained",
+    "eta": 0.001,
+    "margin_ratio": 1.25,
+    "bootstrap": 1000,
+    "seed": 0,
+    "out": "/workspace/CloudFare/Depth-Probe/storage/runs/absorption-tests/report",
+    "overwrite": true,
+    "run": "<function command_analyze_absorption at 0xf49a6e231620>"
+  },
+  "reference": "trained",
+  "eta": 0.001,
+  "margin_log": 0.22314355131420976,
+  "answers": [
+    {
+      "site": 1,
+      "q1_noise_itself": "grows",
+      "q2_learned": "no",
+      "q3_kind": "unclear"
+    },
+    {
+      "site": 12,
+      "q1_noise_itself": "grows",
+      "q2_learned": "no",
+      "q3_kind": "denoising"
+    },
+    {
+      "site": 24,
+      "q1_noise_itself": "grows",
+      "q2_learned": "no",
+      "q3_kind": "denoising"
+    }
+  ],
+  "rows": [
+    {
+      "site": 1,
+      "eta": 0.001,
+      "log_noise_survival": {
+        "value": 3.8874389664945577,
+        "low": 3.6031824198832627,
+        "high": 4.1433339425007905
+      },
+      "log_signal_growth": {
+        "value": 5.088307194615019,
+        "low": 5.0696884941006735,
+        "high": 5.109601657562568
+      },
+      "log_spread_growth": {
+        "value": 4.645410752105669,
+        "low": 4.615953082770613,
+        "high": 4.676797881562305
+      },
+      "log_relative_absorption": {
+        "value": -1.200868228120461,
+        "low": -1.4855691644700393,
+        "high": -0.9466355501411525
+      },
+      "log_absorption_vs_spread": {
+        "value": -0.7579717856111117,
+        "low": -1.0373073248654148,
+        "high": -0.5147307393445095
+      },
+      "q1": "grows",
+      "log_real_survival_changed": {
+        "value": 3.3736329226328956,
+        "low": 3.164826631768225,
+        "high": 3.608509692657127
+      },
+      "log_noise_survival_changed": {
+        "value": 3.064472063566767,
+        "low": 2.922983912574711,
+        "high": 3.2376023807155447
+      },
+      "log_selectivity_changed": {
+        "value": 0.3091608590661288,
+        "low": 0.18942559149388077,
+        "high": 0.4209897834816782
+      },
+      "log_real_survival_preserved": {
+        "value": 4.064902247877976,
+        "low": 3.8192637287240054,
+        "high": 4.312433018355951
+      },
+      "log_noise_survival_preserved": {
+        "value": 3.9007726404386824,
+        "low": 3.616554754219968,
+        "high": 4.158933614736508
+      },
+      "log_selectivity_preserved": {
+        "value": 0.1641296074392935,
+        "low": -0.027072088506917568,
+        "high": 0.36959209137422405
+      },
+      "changed_fraction": 0.01248611788638982,
+      "q3": "unclear",
+      "output_kl_noise": 9.666888354253477e-08,
+      "output_kl_carry_noise": -4.355909302935541e-10,
+      "log_repaired_noise": {
+        "value": null,
+        "low": null,
+        "high": null
+      },
+      "output_kl_real": 1.3846552073765068e-07,
+      "output_kl_carry_real": -4.81363716330656e-10,
+      "log_repaired_real": {
+        "value": null,
+        "low": null,
+        "high": null
+      }
+    },
+    {
+      "site": 1,
+      "eta": 0.01,
+      "log_noise_survival": {
+        "value": 3.8301240542957724,
+        "low": 3.57519106837566,
+        "high": 4.066413944247333
+      },
+      "log_signal_growth": {
+        "value": 5.088307194615019,
+        "low": 5.0696884941006735,
+        "high": 5.109601657562568
+      },
+      "log_spread_growth": {
+        "value": 4.645410752105669,
+        "low": 4.615953082770613,
+        "high": 4.676797881562305
+      },
+      "log_relative_absorption": {
+        "value": -1.2581831403192463,
+        "low": -1.51824418842536,
+        "high": -1.0155399823672338
+      },
+      "log_absorption_vs_spread": {
+        "value": -0.8152866978098969,
+        "low": -1.0651500390167632,
+        "high": -0.582752054502572
+      },
+      "q1": "grows",
+      "log_real_survival_changed": {
+        "value": 3.364058198449593,
+        "low": 3.1596857652796873,
+        "high": 3.5997222550834276
+      },
+      "log_noise_survival_changed": {
+        "value": 3.043140404068129,
+        "low": 2.9098642513528064,
+        "high": 3.209241866421527
+      },
+      "log_selectivity_changed": {
+        "value": 0.3209177943814643,
+        "low": 0.1891450153126134,
+        "high": 0.43807470883738947
+      },
+      "log_real_survival_preserved": {
+        "value": 4.008741485419379,
+        "low": 3.7878986754097563,
+        "high": 4.2217695018261026
+      },
+      "log_noise_survival_preserved": {
+        "value": 3.843257277083269,
+        "low": 3.5862266409345267,
+        "high": 4.080384239333119
+      },
+      "log_selectivity_preserved": {
+        "value": 0.16548420833610988,
+        "low": 0.035177527212958776,
+        "high": 0.31212366480374587
+      },
+      "changed_fraction": 0.01248611788638982,
+      "q3": "unclear",
+      "output_kl_noise": 7.344973711265844e-06,
+      "output_kl_carry_noise": 8.556788968484907e-09,
+      "log_repaired_noise": {
+        "value": 6.755046510194009,
+        "low": 6.398529072680425,
+        "high": 7.201390466942061
+      },
+      "output_kl_real": 1.5152203351126927e-05,
+      "output_kl_carry_real": 9.027146595656097e-09,
+      "log_repaired_real": {
+        "value": 7.425664910209388,
+        "low": 7.1077040772801094,
+        "high": 7.761601138437959
+      }
+    },
+    {
+      "site": 12,
+      "eta": 0.001,
+      "log_noise_survival": {
+        "value": 2.035557958673326,
+        "low": 1.924037135395105,
+        "high": 2.15052482575322
+      },
+      "log_signal_growth": {
+        "value": 3.336507565995311,
+        "low": 3.3161165463262097,
+        "high": 3.3589663998090273
+      },
+      "log_spread_growth": {
+        "value": 2.852412980912623,
+        "low": 2.83245134165215,
+        "high": 2.873344826543184
+      },
+      "log_relative_absorption": {
+        "value": -1.3009496073219853,
+        "low": -1.4211096313250642,
+        "high": -1.187195643063038
+      },
+      "log_absorption_vs_spread": {
+        "value": -0.816855022239297,
+        "low": -0.9257855259843739,
+        "high": -0.713502146455476
+      },
+      "q1": "grows",
+      "log_real_survival_changed": {
+        "value": 2.5367648107233713,
+        "low": 2.4612891287822682,
+        "high": 2.61845924071034
+      },
+      "log_noise_survival_changed": {
+        "value": 1.7601454286129365,
+        "low": 1.701755278461903,
+        "high": 1.8203025295324142
+      },
+      "log_selectivity_changed": {
+        "value": 0.7766193821104348,
+        "low": 0.7225887952645706,
+        "high": 0.8272018406408183
+      },
+      "log_real_survival_preserved": {
+        "value": 3.077636409962139,
+        "low": 2.7558124096459253,
+        "high": 3.4272957289758743
+      },
+      "log_noise_survival_preserved": {
+        "value": 2.042287603876215,
+        "low": 1.9295749064988412,
+        "high": 2.1584563611498555
+      },
+      "log_selectivity_preserved": {
+        "value": 1.0353488060859237,
+        "low": 0.7967377627786434,
+        "high": 1.3092940491418192
+      },
+      "changed_fraction": 0.012450428371258537,
+      "q3": "denoising",
+      "output_kl_noise": 2.257952303885157e-07,
+      "output_kl_carry_noise": 3.022668628677135e-09,
+      "log_repaired_noise": {
+        "value": 4.3134884352476535,
+        "low": 4.117743290945494,
+        "high": 4.552035963585899
+      },
+      "output_kl_real": 8.259952616482923e-07,
+      "output_kl_carry_real": 3.544594968250779e-09,
+      "log_repaired_real": {
+        "value": 5.451165137916819,
+        "low": 5.284577596785345,
+        "high": 5.659756418179125
+      }
+    },
+    {
+      "site": 12,
+      "eta": 0.01,
+      "log_noise_survival": {
+        "value": 2.0516447628877676,
+        "low": 1.9178395617345552,
+        "high": 2.1782848052032953
+      },
+      "log_signal_growth": {
+        "value": 3.336507565995311,
+        "low": 3.3161165463262097,
+        "high": 3.3589663998090273
+      },
+      "log_spread_growth": {
+        "value": 2.852412980912623,
+        "low": 2.83245134165215,
+        "high": 2.873344826543184
+      },
+      "log_relative_absorption": {
+        "value": -1.2848628031075435,
+        "low": -1.4217836567613527,
+        "high": -1.1549704350828824
+      },
+      "log_absorption_vs_spread": {
+        "value": -0.8007682180248552,
+        "low": -0.9273447625285463,
+        "high": -0.6772184650934767
+      },
+      "q1": "grows",
+      "log_real_survival_changed": {
+        "value": 2.5334229847916276,
+        "low": 2.46364324156893,
+        "high": 2.611234255944311
+      },
+      "log_noise_survival_changed": {
+        "value": 1.759353539821941,
+        "low": 1.7008771725868013,
+        "high": 1.8186868245231034
+      },
+      "log_selectivity_changed": {
+        "value": 0.7740694449696865,
+        "low": 0.7224875733133825,
+        "high": 0.8216023274065963
+      },
+      "log_real_survival_preserved": {
+        "value": 2.83675855609658,
+        "low": 2.714979787249814,
+        "high": 2.955124086901494
+      },
+      "log_noise_survival_preserved": {
+        "value": 2.058516457297648,
+        "low": 1.9231019063702937,
+        "high": 2.1861228661309022
+      },
+      "log_selectivity_preserved": {
+        "value": 0.7782420987989318,
+        "low": 0.7177502244922008,
+        "high": 0.8409340093303982
+      },
+      "changed_fraction": 0.012450428371258537,
+      "q3": "denoising",
+      "output_kl_noise": 2.256490729575921e-05,
+      "output_kl_carry_noise": 2.977708476772958e-07,
+      "log_repaired_noise": {
+        "value": 4.327826980760293,
+        "low": 4.263360210472153,
+        "high": 4.408936003404242
+      },
+      "output_kl_real": 8.221980160427232e-05,
+      "output_kl_carry_real": 3.2272357730704e-07,
+      "log_repaired_real": {
+        "value": 5.5403552884551015,
+        "low": 5.481901306272091,
+        "high": 5.601382178717807
+      }
+    },
+    {
+      "site": 24,
+      "eta": 0.001,
+      "log_noise_survival": {
+        "value": 0.9117715944827636,
+        "low": 0.8846068013641857,
+        "high": 0.943497549538308
+      },
+      "log_signal_growth": {
+        "value": 2.142061799371229,
+        "low": 2.081489184554337,
+        "high": 2.188436289244239
+      },
+      "log_spread_growth": {
+        "value": 1.6835495378987173,
+        "low": 1.6133382545418886,
+        "high": 1.7466927337566034
+      },
+      "log_relative_absorption": {
+        "value": -1.2302902048884656,
+        "low": -1.2864379053478512,
+        "high": -1.1585299004455352
+      },
+      "log_absorption_vs_spread": {
+        "value": -0.7717779434159537,
+        "low": -0.8282654752824994,
+        "high": -0.6910622020044955
+      },
+      "q1": "grows",
+      "log_real_survival_changed": {
+        "value": 1.688941706465994,
+        "low": 1.638538947716499,
+        "high": 1.748245351708278
+      },
+      "log_noise_survival_changed": {
+        "value": 0.9199522542770128,
+        "low": 0.876372030819562,
+        "high": 0.9793551789950103
+      },
+      "log_selectivity_changed": {
+        "value": 0.7689894521889812,
+        "low": 0.7274208116691738,
+        "high": 0.8112481449146838
+      },
+      "log_real_survival_preserved": {
+        "value": 1.61655104040148,
+        "low": 1.5521250276039291,
+        "high": 1.6750494723859048
+      },
+      "log_noise_survival_preserved": {
+        "value": 0.9122919261227936,
+        "low": 0.8845146748842723,
+        "high": 0.9447908053735193
+      },
+      "log_selectivity_preserved": {
+        "value": 0.7042591142786864,
+        "low": 0.6473250587278642,
+        "high": 0.7510621430066202
+      },
+      "changed_fraction": 0.012450428371258537,
+      "q3": "denoising",
+      "output_kl_noise": 3.315837365594538e-07,
+      "output_kl_carry_noise": 3.247439825673491e-08,
+      "log_repaired_noise": {
+        "value": 2.323428343746684,
+        "low": 2.2272861319909425,
+        "high": 2.4227283061815954
+      },
+      "output_kl_real": 1.211986881777836e-06,
+      "output_kl_carry_real": 4.874661177749667e-08,
+      "log_repaired_real": {
+        "value": 3.2133806499266253,
+        "low": 3.1610736587577795,
+        "high": 3.270971274788949
+      }
+    },
+    {
+      "site": 24,
+      "eta": 0.01,
+      "log_noise_survival": {
+        "value": 0.912197148366024,
+        "low": 0.8832357851691554,
+        "high": 0.9456695730214829
+      },
+      "log_signal_growth": {
+        "value": 2.142061799371229,
+        "low": 2.081489184554337,
+        "high": 2.188436289244239
+      },
+      "log_spread_growth": {
+        "value": 1.6835495378987173,
+        "low": 1.6133382545418886,
+        "high": 1.7466927337566034
+      },
+      "log_relative_absorption": {
+        "value": -1.2298646510052054,
+        "low": -1.2873877424549922,
+        "high": -1.1545454592055961
+      },
+      "log_absorption_vs_spread": {
+        "value": -0.7713523895326934,
+        "low": -0.8287107400366208,
+        "high": -0.6886833742482981
+      },
+      "q1": "grows",
+      "log_real_survival_changed": {
+        "value": 1.6913246589952255,
+        "low": 1.6411598142654076,
+        "high": 1.7494658036031872
+      },
+      "log_noise_survival_changed": {
+        "value": 0.9197160423054063,
+        "low": 0.8763532672982043,
+        "high": 0.9786784471054284
+      },
+      "log_selectivity_changed": {
+        "value": 0.7716086166898193,
+        "low": 0.7306858661998704,
+        "high": 0.8134004685423695
+      },
+      "log_real_survival_preserved": {
+        "value": 1.6189025499980922,
+        "low": 1.5541773558002239,
+        "high": 1.6774406237145136
+      },
+      "log_noise_survival_preserved": {
+        "value": 0.9127210226056878,
+        "low": 0.8831768797242819,
+        "high": 0.9466848254898796
+      },
+      "log_selectivity_preserved": {
+        "value": 0.7061815273924045,
+        "low": 0.647373208211686,
+        "high": 0.7537949890343985
+      },
+      "changed_fraction": 0.012450428371258537,
+      "q3": "denoising",
+      "output_kl_noise": 3.440160873201553e-05,
+      "output_kl_carry_noise": 3.3461124612913444e-06,
+      "log_repaired_noise": {
+        "value": 2.3303041160847746,
+        "low": 2.2102265229452542,
+        "high": 2.4556458863417485
+      },
+      "output_kl_real": 0.00012168271942042134,
+      "output_kl_carry_real": 4.922748811140961e-06,
+      "log_repaired_real": {
+        "value": 3.2075499207127427,
+        "low": 3.1551300644373925,
+        "high": 3.2661466189757187
+      }
+    }
+  ],
+  "comparisons": [
+    {
+      "control": "random",
+      "site": 1,
+      "eta": 0.001,
+      "log_control_over_trained": {
+        "value": -0.753847216334993,
+        "low": -1.0143349239639325,
+        "high": -0.4659597368589659
+      },
+      "trained_shrinks_more": "no"
+    },
+    {
+      "control": "random",
+      "site": 1,
+      "eta": 0.01,
+      "log_control_over_trained": {
+        "value": -0.6969451763435317,
+        "low": -0.9359399785412668,
+        "high": -0.44334424404543604
+      },
+      "trained_shrinks_more": "no"
+    },
+    {
+      "control": "random",
+      "site": 12,
+      "eta": 0.001,
+      "log_control_over_trained": {
+        "value": -0.9959795808287351,
+        "low": -1.1100482311098847,
+        "high": -0.8857623304788262
+      },
+      "trained_shrinks_more": "no"
+    },
+    {
+      "control": "random",
+      "site": 12,
+      "eta": 0.01,
+      "log_control_over_trained": {
+        "value": -1.0121595096967577,
+        "low": -1.1404033178673136,
+        "high": -0.8792996506816302
+      },
+      "trained_shrinks_more": "no"
+    },
+    {
+      "control": "random",
+      "site": 24,
+      "eta": 0.001,
+      "log_control_over_trained": {
+        "value": -0.5235163978954063,
+        "low": -0.5548579195508784,
+        "high": -0.4963670428380179
+      },
+      "trained_shrinks_more": "no"
+    },
+    {
+      "control": "random",
+      "site": 24,
+      "eta": 0.01,
+      "log_control_over_trained": {
+        "value": -0.5239784921727744,
+        "low": -0.5568562514832482,
+        "high": -0.49474069071436094
+      },
+      "trained_shrinks_more": "no"
+    },
+    {
+      "control": "permuted",
+      "site": 1,
+      "eta": 0.001,
+      "log_control_over_trained": {
+        "value": 8.661456288456897,
+        "low": 8.400424241917431,
+        "high": 8.944217373977052
+      },
+      "trained_shrinks_more": "yes"
+    },
+    {
+      "control": "permuted",
+      "site": 1,
+      "eta": 0.01,
+      "log_control_over_trained": {
+        "value": 6.918990871701169,
+        "low": 6.680450031250556,
+        "high": 7.1711000534000515
+      },
+      "trained_shrinks_more": "yes"
+    },
+    {
+      "control": "permuted",
+      "site": 12,
+      "eta": 0.001,
+      "log_control_over_trained": {
+        "value": 4.8218577871113695,
+        "low": 4.711320307121284,
+        "high": 4.932783126497329
+      },
+      "trained_shrinks_more": "yes"
+    },
+    {
+      "control": "permuted",
+      "site": 12,
+      "eta": 0.01,
+      "log_control_over_trained": {
+        "value": 4.518495411915165,
+        "low": 4.3889050142989845,
+        "high": 4.651365337288695
+      },
+      "trained_shrinks_more": "yes"
+    },
+    {
+      "control": "permuted",
+      "site": 24,
+      "eta": 0.001,
+      "log_control_over_trained": {
+        "value": 3.29051091579091,
+        "low": 3.2609538055416767,
+        "high": 3.3201127550902396
+      },
+      "trained_shrinks_more": "yes"
+    },
+    {
+      "control": "permuted",
+      "site": 24,
+      "eta": 0.01,
+      "log_control_over_trained": {
+        "value": 3.278652252256801,
+        "low": 3.246292506368178,
+        "high": 3.3090709389092288
+      },
+      "trained_shrinks_more": "yes"
+    }
+  ]
+}
