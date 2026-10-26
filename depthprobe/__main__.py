@@ -812,7 +812,6 @@ def parser():
     absorb.add_argument("--output-kl", action="store_true", help="Record the next-token KL of every perturbation")
     absorb.add_argument("--sinks-from", help="Reuse the sink positions of this earlier reproduce-absorption run "
                                              "(controls must exclude exactly the trained model's tokens)")
-    absorb.add_argument("--chunk", type=int, default=256, help="Tokens per readout chunk (KL, predictions)")
     absorb.add_argument("--bootstrap", type=int, default=1000)
     absorb.add_argument("--label")
     absorb.add_argument("--out", required=True)
