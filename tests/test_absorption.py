@@ -1,12 +1,15 @@
 import json
 
 import numpy as np
+import pytest
 import torch
 
 from conftest import VOCAB, save_tiny_with_tokenizer, tiny
 from depthprobe.__main__ import main
-from depthprobe.absorption import perturbation, relative_error, run_absorption, summarize
+from depthprobe.absorption import (MARGIN, perturbation, q1_verdict, q3_verdict, relative_error, run_absorption,
+                                   summarize, summarize_tests, swap)
 from depthprobe.data import Corpus, make_windows
+from depthprobe.model import Readout
 
 
 def corpus(n=160):
@@ -98,3 +101,90 @@ def test_reproduce_absorption_cli(tmp_path):
     manifest = json.loads((out / "manifest.json").read_text())
     assert len(manifest["summary"]) == 4 and manifest["absorption"]["scale"] == "frobenius"
     assert (out / "absorption.png").exists() and (out / "absorption.npz").exists()
+
+
+def test_swap_is_keyed_and_replaces_one_early_token():
+    ids = np.random.default_rng(3).integers(0, VOCAB, 500)
+    row = ids[:32]
+    position, token = swap(0, 100, row, ids, bos_offset=0)
+    assert (position, token) == swap(0, 100, row, ids, bos_offset=0)  # same window and seed: same swap
+    assert 1 <= position <= 30 and token != row[position]
+    position, _ = swap(0, 100, row, ids, bos_offset=1)
+    assert position >= 2  # never BOS or the first token
+
+
+def test_absolute_sizes_and_real_swaps_on_a_tiny_model():
+    model = tiny("llama")
+    text = corpus()
+    windows = make_windows(len(text.ids), 32, 32)
+    with pytest.raises(ValueError, match="sites >= 1"):
+        run_absorption(model, text, windows, sites=[0], etas=[1e-2], seeds=1, batch_size=2, bos_id=None,
+                       device="cpu", readout=Readout(model), swaps=True, log=lambda _: None)
+    arrays, meta = run_absorption(model, text, windows, sites=[1, 2], etas=[1e-2], seeds=2, batch_size=2,
+                                  bos_id=None, device="cpu", scale="token", replicas=3, readout=Readout(model),
+                                  swaps=True, log=lambda _: None)
+    assert arrays["delta_norm"].shape == (2, 4, 2, 1, 2, 4, len(windows))
+    noise, real = arrays["delta_norm"][0], arrays["delta_norm"][1]
+    clean = arrays["clean_norm"]  # [site, mask, seed, state, window]
+    for i, site in enumerate(meta["sites"]):
+        # Per-token scaling: on any token set the injected size is exactly eta times the clean size.
+        np.testing.assert_allclose(noise[0, i, 0, :, site] / clean[i, 0, :, site], 1e-2, rtol=1e-4)
+        np.testing.assert_allclose(real[1, i, 0, :, site] / clean[i, 1, :, site], 1e-2, rtol=1e-4)
+        # The absolute sizes reproduce the relative error measured the old way.
+        np.testing.assert_allclose(noise[0, i, 0, :, 3] / clean[i, 0, :, 3], arrays["relative_error"][i, 0, :, 3],
+                                   rtol=1e-4)
+    assert np.isnan(real[0]).all()  # real perturbations live on the swapped tokens only
+    counts = arrays["counts"]
+    np.testing.assert_array_equal(counts[:, 1], counts[:, 2] + counts[:, 3])  # swapped = changed + preserved
+    assert counts[:, 1].sum() > 0
+    assert np.nanmin(arrays["kl"][0, 0]) >= -1e-6 and np.nanmin(arrays["kl_carry"][0, 0]) >= -1e-6
+    assert np.all((arrays["swap_positions"] >= 1) & (arrays["swap_positions"] < 31))
+    rows = summarize_tests(arrays, meta, n_boot=50)
+    assert len(rows) == 2 and all("q1" in row and "q3" in row and "output_kl_real" in row for row in rows)
+    assert all(np.isfinite(row["log_repaired_noise"]["value"]) for row in rows)
+
+
+def interval(value, half=0.05):
+    return {"value": value, "low": value - half, "high": value + half}
+
+
+def test_verdict_rules():
+    assert q1_verdict(interval(np.log(0.3))) == "shrinks"
+    assert q1_verdict(interval(0.0)) == "carried unchanged (dilution)"
+    assert q1_verdict(interval(-0.2, 0.2)) == "unclear"
+    assert q3_verdict(interval(1.0), interval(1.0)) == "denoising"
+    assert q3_verdict(interval(1.0), interval(0.0)) == "convergence"
+    assert q3_verdict(interval(0.0), interval(0.0)) == "compression"
+    assert q3_verdict(interval(1.0), interval(0.2, 0.2)) == "unclear"
+    assert q3_verdict(interval(1.0), interval(-1.0)).startswith("none of the three")
+    assert abs(MARGIN - np.log(1.25)) < 1e-12
+
+
+def test_absorption_tests_cli(tmp_path):
+    model = tmp_path / "model"
+    save_tiny_with_tokenizer(model, "llama")
+    data = tmp_path / "text.txt"
+    data.write_text("".join(f" = T{i} = \n" + "a b c a c b " * 8 + "\n" for i in range(6)))
+    common = ["--model", str(model), "--device", "cpu", "--data", str(data), "--ctx", "16", "--stride", "16",
+              "--batch-size", "2", "--sites", "1,2", "--etas", "1e-3,1e-2", "--seeds", "2", "--scale", "token",
+              "--exclude-sinks", "--bootstrap", "20"]
+    trained = tmp_path / "trained"
+    main(["reproduce-absorption", *common, "--real-swaps", "--label", "trained", "--out", str(trained)])
+    main(["reproduce-absorption", *common, "--init", "random", "--sinks-from", str(trained), "--label", "random",
+          "--out", str(tmp_path / "random")])
+    main(["reproduce-absorption", *common, "--init", "permuted", "--label", "own-sinks",
+          "--out", str(tmp_path / "own-sinks")])
+    main(["analyze-absorption", str(trained), str(tmp_path / "random"), "--eta", "1e-3", "--bootstrap", "50",
+          "--out", str(tmp_path / "report")])
+    verdict = json.loads((tmp_path / "report" / "verdict.json").read_text())
+    assert [answer["site"] for answer in verdict["answers"]] == [1, 2]
+    for answer in verdict["answers"]:
+        assert answer["q2_learned"] in ("yes", "no", "unclear")
+        assert answer["q3_kind"] in ("denoising", "convergence", "compression", "unclear") \
+            or answer["q3_kind"].startswith("none of the three")
+    assert (tmp_path / "report" / "tests.png").exists()
+    with pytest.raises(SystemExit, match="reuse the reference sinks"):
+        main(["analyze-absorption", str(trained), str(tmp_path / "own-sinks"), "--out", str(tmp_path / "refused")])
+    with pytest.raises(SystemExit, match="different"):
+        main(["reproduce-absorption", *[a if a != "16" else "8" for a in common], "--sinks-from", str(trained),
+              "--out", str(tmp_path / "mismatch")])

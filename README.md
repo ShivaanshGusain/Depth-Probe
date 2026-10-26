@@ -259,6 +259,39 @@ layer numbering (state l = output of block l; if the paper's "layer 1" is a 0-ba
 state 2). `--data` also accepts one JSON-lines shard with a `text` field per line (C4: `allenai/c4`,
 `en/c4-validation.*.json.gz`); pass the file itself, not a directory of shards.
 
+### What the absorption coefficient cannot tell, and the three tests that can
+
+On Qwen3-8B the reproduction gave r = R_L / R_l of about 0.3 at states 1, 12 and 24 once FP16 and sink
+tokens were taken out. Because R divides by the size of the clean state, r < 1 has three explanations:
+the noise is carried unchanged while the clean state grows (dilution); the later layers squeeze every
+difference toward the prediction, real ones included (convergence or compression); or they remove random
+perturbations while keeping real ones (denoising). `scripts/absorption_tests.sh` separates them with rules
+fixed before the run:
+
+| Question | Measured | Answer |
+|---|---|---|
+| Q1: does the noise itself shrink? | absolute survival `||D_L|| / ||D_l||` | `shrinks` if clearly below 1, `carried unchanged (dilution)` if about 1 |
+| Q2: is the shrinking learned? | survival in random-init and permuted-weight copies over the trained model's | `yes` only if both controls are clearly beaten |
+| Q3: which kind? | survival of a real perturbation over noise of the same size on the same tokens | see below |
+
+The real perturbation (`--real-swaps`): one early token of each window is swapped for a corpus token, and
+the difference this makes at state l, scaled exactly like the noise, is injected at l with the original
+context. Tokens are split by whether the swap changes the model's top-1 prediction. Q3 is `denoising` if real
+perturbations clearly outlive noise on both token sets, `convergence` if only on prediction-changed tokens
+(about equal on preserved ones), `compression` if about equal on both, `unclear` otherwise.
+
+"Clearly" means a ratio beyond 1.25 (`--margin-ratio`) with the 95% window-bootstrap interval on the same
+side of 1; "about equal" means the whole interval within 1/1.25..1.25. The answers use eta = 1e-3
+(`--eta`), in float32 with per-token noise and sinks excluded; controls reuse the trained run's sink
+positions (`--sinks-from`). The run also records the clean state's growth in norm and in spread between
+tokens, and the next-token KL of every perturbation.
+
+```bash
+MODEL=$MODELS/qwen3-8b DATA=/path/c4-validation.00000-of-00008.json.gz OUT=$PWD/storage/runs \
+    bash scripts/absorption_tests.sh
+# answers: storage/runs/absorption-tests/report/verdict.json and tests.png
+```
+
 ## Local middle-block fine-tuning
 
 For the memory-constrained staged-training goal and the Pythia/GPT-NeoX pilot,
@@ -462,6 +495,7 @@ depthprobe/
   toys.py        analytic stacks with known answers for the E6 metrics
   absorption.py  reproduction of the perturbation-absorption probe (arXiv 2606.15161)
   provenance.py  manifests
-scripts/pilot_gpt2.sh, scripts/pilot.sh, scripts/perturb_gpt2.sh, scripts/reproduce_absorption.sh
+scripts/pilot_gpt2.sh, scripts/pilot.sh, scripts/perturb_gpt2.sh, scripts/reproduce_absorption.sh,
+scripts/absorption_tests.sh
 PREREGISTRATION.md   thresholds, fixed before confirmatory runs
 ```
