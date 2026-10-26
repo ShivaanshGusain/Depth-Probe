@@ -282,14 +282,24 @@ perturbations clearly outlive noise on both token sets, `convergence` if only on
 
 "Clearly" means a ratio beyond 1.25 (`--margin-ratio`) with the 95% window-bootstrap interval on the same
 side of 1; "about equal" means the whole interval within 1/1.25..1.25. The answers use eta = 1e-3
-(`--eta`), in float32 with per-token noise and sinks excluded; controls reuse the trained run's sink
+(`--eta`; v2 uses 1e-2), in float32 with per-token noise and sinks excluded; controls reuse the trained run's sink
 positions (`--sinks-from`). The run also records the clean state's growth in norm and in spread between
 tokens, and the next-token KL of every perturbation.
 
+v2 (the script's current defaults; rules in `PREREGISTRATION.md`, "Absorption tests v2") tightens every
+comparison. Q3 compares the real perturbation with the same perturbation rotated to random feature directions
+(same per-token sizes and token-to-token correlations), so correlation across tokens cannot pose as a
+preference for data directions. Shuffled-middle and permuted-weight controls decide, random weights are reported
+only, every control reuses the trained run's sinks, swaps and prediction-changed token sets, and a control whose
+noise saturates (R_L > 0.1) is "not applicable". It adds Q2 relative (noise relative to clean-signal growth),
+Q3 learned, Q3 without massive coordinates, and Q4: KL of the propagated noise over KL of a random direction
+with the same per-token size at the last layer, i.e. whether the model steers noise out of the directions the
+prediction reads. It uses a fresh C4 shard (00001) and eta = 1e-2.
+
 ```bash
-MODEL=$MODELS/qwen3-8b DATA=/path/c4-validation.00000-of-00008.json.gz OUT=$PWD/storage/runs \
+MODEL=$MODELS/qwen3-8b DATA=/path/c4-validation.00001-of-00008.json.gz OUT=$PWD/storage/runs \
     bash scripts/absorption_tests.sh
-# answers: storage/runs/absorption-tests/report/verdict.json and tests.png
+# answers: storage/runs/absorption-tests-v2/report/verdict.json and tests.png
 ```
 
 ## Local middle-block fine-tuning

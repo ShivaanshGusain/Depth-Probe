@@ -5,39 +5,54 @@
 #   Q3  Denoising, convergence or compression: does a real perturbation (the difference a swapped earlier token
 #       makes) survive better than noise of the same size on the same tokens, for tokens whose prediction the
 #       swap changes and for tokens whose prediction it preserves?
+# v2 (rules in PREREGISTRATION.md, "Absorption tests v2"):
+#   - Q3 compares the real perturbation with the same perturbation rotated to random feature directions, so the
+#     correlation of the real perturbation across tokens cannot pose as a preference for data directions;
+#   - controls: shuffled middle layers and permuted weights decide, random weights are reported only; every
+#     control reuses the trained run's sinks, swaps and prediction-changed token sets; comparisons against a
+#     control whose noise saturates (R_L > 0.1) are "not applicable";
+#   - Q2 relative (noise relative to clean-signal growth), Q3 learned, Q3 without massive coordinates, and
+#   - Q4  Does the model steer noise out of the directions the prediction reads? KL of the propagated noise vs
+#       KL of a random direction with the same per-token size at the last layer.
 # Settings follow the cleanest reproduction configuration: float32, per-token noise, sink tokens excluded
 # (the controls reuse the trained model's sink positions). Answers use PRIMARY_ETA; "clearly" means a ratio
 # beyond MARGIN_RATIO with the 95% window-bootstrap interval on the same side. Downloads nothing; finished
 # runs are skipped; settings are stamped and cannot change between attempts.
 #
-#   MODEL=/workspace/models/qwen3-8b DATA=/workspace/data/c4/en/c4-validation.00000-of-00008.json.gz \
+#   MODEL=/workspace/models/qwen3-8b DATA=/workspace/data/c4/en/c4-validation.00001-of-00008.json.gz \
 #     OUT=$PWD/storage/runs bash scripts/absorption_tests.sh
 #
-# Time on the GX10 for Qwen3-8B (from the float32 reproduction, ~15 s per suffix pass): the trained run with
-# swaps ~75 min, each control ~50 min, about 3 hours in all. The log prints the pass count and a time estimate.
+# Time on the GX10 for Qwen3-8B: v1 took ~30 s per suffix pass of 5 copies (2.3 h trained, 1.6 h per control).
+# v2 runs 2 passes of 6 copies per site and window (9 conditions, REPLICAS=5) plus extra readouts: expect about
+# 2-2.5 h per run, 8-10 h for the trained model and three controls. The deciding controls run first; drop
+# "random" from CONTROLS to save ~2 h. The log prints the pass count and a time estimate after the first window.
 set -euo pipefail
 
 : "${MODEL:?set MODEL to a local model directory}"
 : "${DATA:?set DATA to a local corpus (e.g. a C4 .json.gz shard)}"
 : "${OUT:?set OUT to the directory for results}"
-NAME="${NAME:-absorption-tests}"
+NAME="${NAME:-absorption-tests-v2}"
 DEVICE="${DEVICE:-auto}"
 SPLIT="${SPLIT:-validation}"
 CTX="${CTX:-2048}"
 STRIDE="${STRIDE:-$CTX}"
 MAX_TOKENS="${MAX_TOKENS:-65536}"   # 32 sequences of 2048
 BATCH="${BATCH:-1}"
-REPLICAS="${REPLICAS:-4}"
+REPLICAS="${REPLICAS:-5}"        # 9 conditions (noise, real, rotated x 3 seeds) in 2 passes of 6 copies
 SITES="${SITES:-1,12,24}"
-ETAS="${ETAS:-1e-3,1e-2}"           # float32 is linear here; the eta = 0 floor was ~1e-5 in the reproduction
+ETAS="${ETAS:-1e-2}"                # v1: survival identical at 1e-3 and 1e-2 (linear), KL better resolved at 1e-2
 SEEDS="${SEEDS:-3}"
 PREPEND_BOS="${PREPEND_BOS:-0}"
-PRIMARY_ETA="${PRIMARY_ETA:-1e-3}"
+PRIMARY_ETA="${PRIMARY_ETA:-1e-2}"
 MARGIN_RATIO="${MARGIN_RATIO:-1.25}"
-CONTROLS="${CONTROLS:-random permuted}"
+CONTROLS="${CONTROLS:-shuffle_middle_0 permuted random}"
+CONTROL_SWAPS="${CONTROL_SWAPS:-1}"  # 1: controls also get token swaps, so Q3-learned can be answered
 PY="${PY:-python}"
 RUN="$OUT/$NAME"
 
+if [[ "$DATA" == *"c4-validation.00000-of-00008"* ]]; then
+    echo "[tests] WARNING: $DATA is the shard v1 used; the v2 pre-registration asks for fresh data (shard 00001)" >&2
+fi
 mkdir -p "$RUN"
 stamp="MODEL=$MODEL
 DATA=$DATA
@@ -51,7 +66,9 @@ ETAS=$ETAS
 SEEDS=$SEEDS
 PREPEND_BOS=$PREPEND_BOS
 PRIMARY_ETA=$PRIMARY_ETA
-MARGIN_RATIO=$MARGIN_RATIO"
+MARGIN_RATIO=$MARGIN_RATIO
+CONTROLS=$CONTROLS
+CONTROL_SWAPS=$CONTROL_SWAPS"
 if [[ -f "$RUN/settings.env" ]]; then
     if [[ "$(cat "$RUN/settings.env")" != "$stamp" ]]; then
         echo "Settings differ from the earlier run in $RUN:" >&2
@@ -82,18 +99,23 @@ else
 fi
 
 runs=("$RUN/trained")
+control_extra=()
+if [[ "$CONTROL_SWAPS" == 1 ]]; then
+    control_extra=(--real-swaps)
+fi
 for control in $CONTROLS; do
     case "$control" in
         random) options=(--init random --init-seed 0) ;;
         permuted) options=(--init permuted --init-seed 0) ;;
+        shuffle_middle_*) options=(--shuffle middle --shuffle-seed "${control##*_}") ;;
         *) echo "Unknown control: $control" >&2; exit 1 ;;
     esac
     if [[ -f "$RUN/$control/manifest.json" ]]; then
         echo "[tests] $control done, skipping"
     else
         echo "[tests] control: $control"
-        "$PY" -m depthprobe reproduce-absorption "${common[@]}" "${options[@]}" --sinks-from "$RUN/trained" \
-            --label "$control" --out "$RUN/$control" --overwrite
+        "$PY" -m depthprobe reproduce-absorption "${common[@]}" "${options[@]}" ${control_extra[@]+"${control_extra[@]}"} \
+            --sinks-from "$RUN/trained" --label "$control" --out "$RUN/$control" --overwrite
     fi
     runs+=("$RUN/$control")
 done

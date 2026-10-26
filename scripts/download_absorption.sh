@@ -14,6 +14,8 @@ set -euo pipefail
 : "${DATA:?set DATA to the directory for datasets}"
 MODEL_REPO="${MODEL_REPO:-Qwen/Qwen3-8B}"
 MODEL_NAME="${MODEL_NAME:-qwen3-8b}"
+# Shard 00000 serves the reproduction and absorption tests v1; v2 needs fresh data:
+#   C4_SHARD=en/c4-validation.00001-of-00008.json.gz
 C4_SHARD="${C4_SHARD:-en/c4-validation.00000-of-00008.json.gz}"
 
 PATTERNS=("*.json" "*.safetensors" "*.txt" "*.model" "*.tiktoken")

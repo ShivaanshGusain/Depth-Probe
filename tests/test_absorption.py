@@ -6,8 +6,8 @@ import torch
 
 from conftest import VOCAB, save_tiny_with_tokenizer, tiny
 from depthprobe.__main__ import main
-from depthprobe.absorption import (MARGIN, perturbation, q1_verdict, q3_verdict, relative_error, run_absorption,
-                                   summarize, summarize_tests, swap)
+from depthprobe.absorption import (MARGIN, control_verdict, perturbation, q1_verdict, q3_verdict, q4_verdict,
+                                   relative_error, rotation, run_absorption, summarize, summarize_tests, swap)
 from depthprobe.data import Corpus, make_windows
 from depthprobe.model import Readout
 
@@ -123,25 +123,66 @@ def test_absolute_sizes_and_real_swaps_on_a_tiny_model():
     arrays, meta = run_absorption(model, text, windows, sites=[1, 2], etas=[1e-2], seeds=2, batch_size=2,
                                   bos_id=None, device="cpu", scale="token", replicas=3, readout=Readout(model),
                                   swaps=True, log=lambda _: None)
-    assert arrays["delta_norm"].shape == (2, 4, 2, 1, 2, 4, len(windows))
-    noise, real = arrays["delta_norm"][0], arrays["delta_norm"][1]
+    assert arrays["delta_norm"].shape == (3, 4, 2, 1, 2, 4, len(windows))
+    noise, real, rotated = arrays["delta_norm"]
     clean = arrays["clean_norm"]  # [site, mask, seed, state, window]
     for i, site in enumerate(meta["sites"]):
         # Per-token scaling: on any token set the injected size is exactly eta times the clean size.
         np.testing.assert_allclose(noise[0, i, 0, :, site] / clean[i, 0, :, site], 1e-2, rtol=1e-4)
         np.testing.assert_allclose(real[1, i, 0, :, site] / clean[i, 1, :, site], 1e-2, rtol=1e-4)
+        np.testing.assert_allclose(rotated[1, i, 0, :, site] / clean[i, 1, :, site], 1e-2, rtol=1e-4)
         # The absolute sizes reproduce the relative error measured the old way.
         np.testing.assert_allclose(noise[0, i, 0, :, 3] / clean[i, 0, :, 3], arrays["relative_error"][i, 0, :, 3],
                                    rtol=1e-4)
-    assert np.isnan(real[0]).all()  # real perturbations live on the swapped tokens only
+    assert np.isnan(real[0]).all() and np.isnan(rotated[0]).all()  # they live on the swapped tokens only
+    assert arrays["changed_tokens"].shape == (2, len(windows), 32) and arrays["changed_tokens"].dtype == bool
     counts = arrays["counts"]
     np.testing.assert_array_equal(counts[:, 1], counts[:, 2] + counts[:, 3])  # swapped = changed + preserved
     assert counts[:, 1].sum() > 0
     assert np.nanmin(arrays["kl"][0, 0]) >= -1e-6 and np.nanmin(arrays["kl_carry"][0, 0]) >= -1e-6
     assert np.all((arrays["swap_positions"] >= 1) & (arrays["swap_positions"] < 31))
+    # Massive coordinates only ever remove energy; the random direction at the last state has size eta exactly.
+    full, bulk = arrays["delta_norm"], arrays["delta_norm_bulk"]
+    measured = np.isfinite(full)
+    assert np.array_equal(measured, np.isfinite(bulk)) and np.all(bulk[measured] <= full[measured] * (1 + 1e-9))
+    np.testing.assert_allclose(arrays["size_random_total"][:, 0], 1e-4 * counts[:, 0], rtol=1e-12)
+    for key in ("kl_total", "kl_random_total"):
+        assert np.nanmin(arrays[key]) >= -1e-12, key  # float64 KL: no negative rounding
+    assert np.nanmin(arrays["size_total"]) >= 0 and np.nanmin(arrays["size_post_total"]) >= 0
+    # The Q4 reference has exactly the propagated perturbation's size at every token.
+    np.testing.assert_allclose(arrays["size_total"][:, 2], arrays["size_total"][:, 0], rtol=0)
     rows = summarize_tests(arrays, meta, n_boot=50)
     assert len(rows) == 2 and all("q1" in row and "q3" in row and "output_kl_real" in row for row in rows)
     assert all(np.isfinite(row["log_repaired_noise"]["value"]) for row in rows)
+    for row in rows:
+        assert row["q3_statistic"] == "real vs rotated real" and "q3_vs_noise" in row and "q3_massive_check" in row
+        assert np.isfinite(row["log_rotated_over_noise_changed"]["value"]) or row["changed_fraction"] == 0
+        assert "q4" in row and np.isfinite(row["log_steering_noise"]["value"])
+        assert np.isfinite(row["log_steering_noise_post_norm"]["value"])
+        assert np.isfinite(row["log_steering_real"]["value"]) and np.isfinite(row["log_steering_rotated"]["value"])
+        shares = [row[f"massive_share_{kind}_{where}"] for kind in ("noise", "real", "rotated")
+                  for where in ("site", "last")]
+        assert all(share is None or -1e-9 <= share <= 1 for share in shares)
+
+
+def test_rotation_keeps_sizes_and_token_correlations():
+    q = rotation(0, 16)
+    torch.testing.assert_close(q @ q.T, torch.eye(16), atol=1e-5, rtol=0)
+    difference = torch.randn(5, 16, generator=torch.Generator().manual_seed(4))
+    turned = difference @ q
+    torch.testing.assert_close(turned.norm(dim=-1), difference.norm(dim=-1), rtol=1e-5, atol=1e-6)
+    torch.testing.assert_close(turned @ turned.T, difference @ difference.T, rtol=1e-4, atol=1e-4)
+    assert torch.equal(rotation(0, 16), q) and not torch.allclose(rotation(1, 16), q)
+
+
+def test_control_rules_skip_saturated_and_reported_only_controls():
+    rows = [{"control": "shuffled", "site": 1, "eta": 0.01, "x": "yes"},
+            {"control": "permuted", "site": 1, "eta": 0.01, "x": "not applicable (control saturated)"},
+            {"control": "random", "site": 1, "eta": 0.01, "x": "no"}]
+    assert control_verdict(rows, 1, 0.01, "x", deciding=["shuffled", "permuted"]) == "yes"
+    assert control_verdict(rows, 1, 0.01, "x") == "no"  # with every control deciding, random's "no" counts
+    assert control_verdict(rows[1:2], 1, 0.01, "x", deciding=["permuted"]).startswith("not applicable")
+    assert control_verdict(rows, 2, 0.01, "x") == "not measured"
 
 
 def interval(value, half=0.05):
@@ -157,6 +198,10 @@ def test_verdict_rules():
     assert q3_verdict(interval(0.0), interval(0.0)) == "compression"
     assert q3_verdict(interval(1.0), interval(0.2, 0.2)) == "unclear"
     assert q3_verdict(interval(1.0), interval(-1.0)).startswith("none of the three")
+    assert q4_verdict(interval(np.log(0.4))).startswith("steered away")
+    assert q4_verdict(interval(0.0)).startswith("not steered")
+    assert q4_verdict(interval(np.log(1.7))).startswith("steered toward")
+    assert q4_verdict(interval(0.2, 0.2)) == "unclear"
     assert abs(MARGIN - np.log(1.25)) < 1e-12
 
 
@@ -170,16 +215,25 @@ def test_absorption_tests_cli(tmp_path):
               "--exclude-sinks", "--bootstrap", "20"]
     trained = tmp_path / "trained"
     main(["reproduce-absorption", *common, "--real-swaps", "--label", "trained", "--out", str(trained)])
-    main(["reproduce-absorption", *common, "--init", "random", "--sinks-from", str(trained), "--label", "random",
-          "--out", str(tmp_path / "random")])
+    for label, init in (("random", "random"), ("permuted", "permuted")):
+        main(["reproduce-absorption", *common, "--init", init, "--real-swaps", "--sinks-from", str(trained),
+              "--label", label, "--out", str(tmp_path / label)])
+    with np.load(trained / "absorption.npz") as first, np.load(tmp_path / "random" / "absorption.npz") as second:
+        np.testing.assert_array_equal(first["changed_tokens"], second["changed_tokens"])  # the trained token sets
     main(["reproduce-absorption", *common, "--init", "permuted", "--label", "own-sinks",
           "--out", str(tmp_path / "own-sinks")])
-    main(["analyze-absorption", str(trained), str(tmp_path / "random"), "--eta", "1e-3", "--bootstrap", "50",
-          "--out", str(tmp_path / "report")])
+    main(["analyze-absorption", str(trained), str(tmp_path / "random"), str(tmp_path / "permuted"), "--eta", "1e-3",
+          "--bootstrap", "50", "--out", str(tmp_path / "report")])
     verdict = json.loads((tmp_path / "report" / "verdict.json").read_text())
+    assert verdict["deciding_controls"] == ["permuted"]  # random weights are reported only
     assert [answer["site"] for answer in verdict["answers"]] == [1, 2]
     for answer in verdict["answers"]:
-        assert answer["q2_learned"] in ("yes", "no", "unclear")
+        for key in ("q2_learned", "q2_relative_learned", "q3_learned", "q4_trained_steers_away_more"):
+            result = answer[key]["answer"]
+            assert result in ("yes", "no", "unclear") or result.startswith("not applicable"), (key, result)
+            assert "random: " in answer[key]["per_control"] and "(reported only)" in answer[key]["per_control"]
+        assert not answer["q4_noise_steering"].startswith("not measured")
+        assert not answer["q3_without_massive_coordinates"].startswith("not measured")
         assert answer["q3_kind"] in ("denoising", "convergence", "compression", "unclear") \
             or answer["q3_kind"].startswith("none of the three")
     assert (tmp_path / "report" / "tests.png").exists()

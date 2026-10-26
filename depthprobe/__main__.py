@@ -520,7 +520,7 @@ def command_reproduce_absorption(args):
         sys.exit("--etas must be distinct and >= 0 (0 measures the floor); --seeds, --every, --replicas at least 1")
     if args.real_swaps and not any(eta > 0 for eta in etas):
         sys.exit("--real-swaps needs at least one eta > 0")
-    fixed_sinks = None
+    fixed_sinks = fixed_changed = None
     if args.sinks_from:
         from depthprobe.perturb import load_sinks
 
@@ -533,12 +533,20 @@ def command_reproduce_absorption(args):
         if differing:
             sys.exit(f"--sinks-from {reference} was run with different {differing}")
         fixed_sinks = load_sinks(reference / "absorption.npz")
+        if args.real_swaps:  # controls compare the trained model's prediction-changed / -preserved token sets
+            with np.load(reference / "absorption.npz") as data:
+                if "changed_tokens" not in data.files:
+                    sys.exit(f"--sinks-from {reference} has no prediction-changed token sets; run it with --real-swaps")
+                if data["changed_tokens"].shape[0] != args.seeds:
+                    sys.exit(f"--sinks-from {reference} used {data['changed_tokens'].shape[0]} seeds, not {args.seeds}")
+                changed = data["changed_tokens"]  # read once: indexing the npz re-reads the array every time
+                fixed_changed = {int(start): changed[:, w] for w, start in enumerate(data["window_starts"])}
     out = prepare_dir(args.out, args.overwrite)
     model, tokenizer, readout, bos_id, device, meta = setup(args)
     sites = parse_sites(args.sites, n_blocks(model))
     corpus = load_corpus(tokenizer, args.data, args.split, max_tokens=args.max_tokens, joiner=args.joiner)
     windows = windows_for(corpus, args, bos_id, args.stride)[::args.every]
-    conditions = len(etas) * args.seeds + (sum(eta > 0 for eta in etas) * args.seeds if args.real_swaps else 0)
+    conditions = len(etas) * args.seeds + (2 * sum(eta > 0 for eta in etas) * args.seeds if args.real_swaps else 0)
     passes = -(-len(windows) // args.batch_size) * len(sites) * -(-conditions // args.replicas)
     log(f"absorption probe: {len(windows)} windows, sites {sites}, etas {etas}, {args.seeds} seeds, "
         f"dtype {args.dtype}, scale {args.scale}, real swaps {'on' if args.real_swaps else 'off'}: "
@@ -548,7 +556,8 @@ def command_reproduce_absorption(args):
                                     batch_size=args.batch_size, bos_id=bos_id, device=device, scale=args.scale,
                                     exclude_sinks=args.exclude_sinks, sink_factor=args.sink_factor,
                                     replicas=args.replicas, readout=readout if use_readout else None,
-                                    swaps=args.real_swaps, fixed_sinks=fixed_sinks, chunk=args.chunk, log=log)
+                                    swaps=args.real_swaps, fixed_sinks=fixed_sinks, fixed_changed=fixed_changed,
+                                    chunk=args.chunk, log=log)
     rows = summarize_absorption(arrays, result, n_boot=args.bootstrap)
     np.savez(out / "absorption.npz", **arrays)
     label = args.label or out.name
@@ -568,9 +577,9 @@ def command_reproduce_absorption(args):
 
 
 def command_analyze_absorption(args):
-    from depthprobe.absorption import compare_runs, plot_tests, q2_verdict, summarize_tests
+    from depthprobe.absorption import compare_runs, control_detail, control_verdict, plot_tests, summarize_tests
 
-    runs = []
+    runs, variants = [], {}
     for path in args.runs:
         path = Path(path)
         run_manifest = json.loads((path / "manifest.json").read_text())
@@ -579,6 +588,7 @@ def command_analyze_absorption(args):
         if "delta_norm" not in arrays:
             sys.exit(f"{path} was made before absolute sizes were recorded; rerun it")
         runs.append((run_manifest["args"].get("label") or path.name, arrays, run_manifest["absorption"]))
+        variants[runs[-1][0]] = run_manifest.get("variant") or {}
     labels = [label for label, _, _ in runs]
     if len(set(labels)) != len(labels):
         sys.exit(f"Run labels must be unique: {labels}")
@@ -598,30 +608,60 @@ def command_analyze_absorption(args):
                                    n_boot=args.bootstrap, seed=args.seed, margin=margin)
     except ValueError as error:
         sys.exit(str(error))
+    # Random weights are reported only (as in E6); permuted weights and shuffled layer orders decide.
+    deciding = [label for label, _, _ in runs if label != reference_label and variants[label].get("init") != "random"]
+    log(f"deciding controls: {deciding or 'none'}; reported only: "
+        f"{[label for label, _, _ in runs if label != reference_label and label not in deciding] or 'none'}")
     answers = []
     for row in rows:
         if row["eta"] != args.eta:
             continue
-        answer = {"site": row["site"], "q1_noise_itself": row["q1"],
-                  "q2_learned": q2_verdict(comparisons, row["site"], args.eta),
-                  "q3_kind": row.get("q3", "not measured (run with --real-swaps)")}
+        site = row["site"]
+
+        def verdict(key):
+            return {"answer": control_verdict(comparisons, site, args.eta, key, deciding),
+                    "per_control": control_detail(comparisons, site, args.eta, key, deciding)}
+
+        answer = {"site": site, "q1_noise_itself": row["q1"],
+                  "q2_learned": verdict("trained_shrinks_more"),
+                  "q2_relative_learned": verdict("trained_relative_lower"),
+                  "q3_kind": row.get("q3", "not measured (run with --real-swaps)"),
+                  "q3_statistic": row.get("q3_statistic"),
+                  "q3_vs_noise_v1": row.get("q3_vs_noise", "not measured"),
+                  "q3_without_massive_coordinates": row.get("q3_massive_check", "not measured"),
+                  "q3_learned": verdict("selectivity_learned"),
+                  "q4_noise_steering": row.get("q4", "not measured (needs the readout: --real-swaps or --output-kl)"),
+                  "q4_trained_steers_away_more": verdict("trained_steers_away_more")}
         answers.append(answer)
         survival = np.exp(row["log_noise_survival"]["value"])
         growth = np.exp(row["log_signal_growth"]["value"])
-        log(f"site {row['site']:>3}: noise survival {survival:.3g}, clean signal growth {growth:.3g} "
-            f"-> Q1 {answer['q1_noise_itself']}; Q2 learned: {answer['q2_learned']}; Q3: {answer['q3_kind']}")
+        log(f"site {site:>3}: noise survival {survival:.3g}, clean signal growth {growth:.3g} "
+            f"-> Q1 {answer['q1_noise_itself']}")
+        log(f"           Q2 learned: relative {answer['q2_relative_learned']['answer']} "
+            f"({answer['q2_relative_learned']['per_control']}); absolute (v1) {answer['q2_learned']['answer']}")
         if "log_selectivity_changed" in row:
-            log(f"           real/noise survival: changed {np.exp(row['log_selectivity_changed']['value']):.3g}, "
-                f"preserved {np.exp(row['log_selectivity_preserved']['value']):.3g} "
-                f"(prediction changed at {row['changed_fraction']:.1%} of swapped tokens)")
+            log(f"           Q3 {answer['q3_kind']} ({row['q3_statistic']}: changed "
+                f"{np.exp(row['log_selectivity_changed']['value']):.3g}, preserved "
+                f"{np.exp(row['log_selectivity_preserved']['value']):.3g}; prediction changed at "
+                f"{row['changed_fraction']:.1%} of swapped tokens); real vs noise (v1): {answer['q3_vs_noise_v1']}")
+            log(f"           Q3 massive coordinates: {answer['q3_without_massive_coordinates']}; Q3 learned: "
+                f"{answer['q3_learned']['answer']} ({answer['q3_learned']['per_control']})")
+        if "log_steering_noise" in row:
+            post = row.get("log_steering_noise_post_norm")
+            log(f"           Q4 {answer['q4_noise_steering']}: noise / size-matched random output effect "
+                f"{np.exp(row['log_steering_noise']['value']):.3g}"
+                + (f" (after the final norm {np.exp(post['value']):.3g})" if post else "")
+                + (f", real / matched {np.exp(row['log_steering_real']['value']):.3g}"
+                   if "log_steering_real" in row else "")
+                + f"; vs controls: {answer['q4_trained_steers_away_more']['per_control'] or 'none'}")
         if "output_kl_noise" in row:
             log(f"           output KL from the clean prediction: noise {row['output_kl_noise']:.3g}, if carried "
                 f"unchanged {row.get('output_kl_carry_noise', float('nan')):.3g}"
                 + (f"; real {row['output_kl_real']:.3g}" if "output_kl_real" in row else ""))
     write_json(out / "verdict.json", {"command": "analyze-absorption", "args": vars(args), "reference": reference_label,
-                                      "eta": args.eta, "margin_log": margin, "answers": answers, "rows": rows,
-                                      "comparisons": comparisons})
-    plot_tests(out, rows, comparisons, args.eta, reference_label)
+                                      "eta": args.eta, "margin_log": margin, "deciding_controls": deciding,
+                                      "answers": answers, "rows": rows, "comparisons": comparisons})
+    plot_tests(out, rows, comparisons, args.eta, reference_label, margin)
     log(f"wrote {out}")
 
 
@@ -822,7 +862,8 @@ def parser():
                                 help="Q1 dilution, Q2 learned (vs controls), Q3 denoising/convergence/compression")
     tests.add_argument("runs", nargs="+", help="reproduce-absorption output directories (trained model first)")
     tests.add_argument("--reference", help="Label of the trained run (default: the first)")
-    tests.add_argument("--eta", type=float, default=1e-3, help="The pre-registered noise size the answers use")
+    tests.add_argument("--eta", type=float, default=1e-2,
+                       help="The pre-registered noise size the answers use (v2: 1e-2; v1 used 1e-3)")
     tests.add_argument("--margin-ratio", type=float, default=1.25,
                        help="'Clearly different' means a ratio beyond this, with the 95%% interval excluding 1")
     tests.add_argument("--bootstrap", type=int, default=1000)
