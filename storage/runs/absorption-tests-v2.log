@@ -1,0 +1,76 @@
+[tests] trained model, with real token swaps
+Loading weights:   0%|          | 0/399 [00:00<?, ?it/s]Loading weights:   0%|          | 1/399 [00:00<03:34,  1.85it/s]Loading weights:  12%|█▏        | 48/399 [00:00<00:03, 97.64it/s]Loading weights:  19%|█▊        | 74/399 [00:00<00:02, 121.60it/s]Loading weights:  24%|██▍       | 96/399 [00:00<00:02, 134.25it/s]Loading weights:  29%|██▉       | 116/399 [00:01<00:01, 145.15it/s]Loading weights:  34%|███▍      | 136/399 [00:01<00:01, 157.04it/s]Loading weights:  39%|███▉      | 156/399 [00:01<00:01, 167.26it/s]Loading weights:  44%|████▍     | 176/399 [00:01<00:01, 165.32it/s]Loading weights:  49%|████▉     | 195/399 [00:01<00:01, 164.43it/s]Loading weights:  53%|█████▎    | 213/399 [00:01<00:01, 164.22it/s]Loading weights:  59%|█████▉    | 235/399 [00:01<00:00, 166.48it/s]Loading weights:  64%|██████▎   | 254/399 [00:01<00:00, 169.53it/s]Loading weights:  70%|██████▉   | 279/399 [00:01<00:00, 171.54it/s]Loading weights:  75%|███████▍  | 299/399 [00:02<00:00, 178.82it/s]Loading weights:  81%|████████  | 323/399 [00:02<00:00, 178.48it/s]Loading weights:  86%|████████▌ | 342/399 [00:02<00:00, 173.64it/s]Loading weights:  91%|█████████ | 364/399 [00:02<00:00, 173.40it/s]Loading weights:  97%|█████████▋| 386/399 [00:02<00:00, 181.29it/s]Loading weights: 100%|██████████| 399/399 [00:02<00:00, 153.41it/s]
+[18:01:03] absorption probe: 32 windows, sites [1, 12, 24], etas [0.01], 3 seeds, dtype float32, scale token, real swaps on: 192 suffix passes of 6 copies
+[18:07:14] absorption probe: 1/32 windows, 6.2 min, about 191.5 min left
+[18:36:38] absorption probe: 6/32 windows, 35.6 min, about 154.2 min left
+[19:05:48] absorption probe: 11/32 windows, 64.8 min, about 123.6 min left
+[19:35:11] absorption probe: 16/32 windows, 94.1 min, about 94.1 min left
+[20:04:16] absorption probe: 21/32 windows, 123.2 min, about 64.5 min left
+[20:33:39] absorption probe: 26/32 windows, 152.6 min, about 35.2 min left
+[21:02:59] absorption probe: 31/32 windows, 181.9 min, about 5.9 min left
+[21:08:41] site   1 eta 0.01: realised/eta 1, rounded away 0, non-finite 0, R_L 0.00238, r = R_L/R_l 0.238 (after final norm 0.268)
+[21:08:41] site  12 eta 0.01: realised/eta 1, rounded away 0, non-finite 0, R_L 0.00297, r = R_L/R_l 0.297 (after final norm 0.321)
+[21:08:41] site  24 eta 0.01: realised/eta 1, rounded away 0, non-finite 0, R_L 0.00304, r = R_L/R_l 0.304 (after final norm 0.318)
+[21:08:41] largest in-batch clean-replica deviation 0.00038; wrote /workspace/CloudFare/Depth-Probe/storage/runs/absorption-tests-v2/trained
+[tests] control: shuffle_middle_0
+Loading weights:   0%|          | 0/399 [00:00<?, ?it/s]Loading weights:   0%|          | 1/399 [00:00<03:34,  1.86it/s]Loading weights:  12%|█▏        | 48/399 [00:00<00:03, 94.22it/s]Loading weights:  18%|█▊        | 70/399 [00:00<00:02, 113.06it/s]Loading weights:  23%|██▎       | 92/399 [00:00<00:02, 128.51it/s]Loading weights:  29%|██▊       | 114/399 [00:01<00:01, 142.59it/s]Loading weights:  34%|███▍      | 136/399 [00:01<00:01, 154.06it/s]Loading weights:  40%|███▉      | 158/399 [00:01<00:01, 162.21it/s]Loading weights:  45%|████▌     | 180/399 [00:01<00:01, 166.68it/s]Loading weights:  51%|█████     | 202/399 [00:01<00:01, 169.82it/s]Loading weights:  56%|█████▌    | 224/399 [00:01<00:01, 174.87it/s]Loading weights:  62%|██████▏   | 246/399 [00:01<00:00, 176.90it/s]Loading weights:  67%|██████▋   | 268/399 [00:01<00:00, 176.80it/s]Loading weights:  72%|███████▏  | 288/399 [00:02<00:00, 173.93it/s]Loading weights:  77%|███████▋  | 309/399 [00:02<00:00, 180.29it/s]Loading weights:  82%|████████▏ | 328/399 [00:02<00:00, 181.75it/s]Loading weights:  87%|████████▋ | 347/399 [00:02<00:00, 156.95it/s]Loading weights:  92%|█████████▏| 367/399 [00:02<00:00, 164.70it/s]Loading weights:  97%|█████████▋| 389/399 [00:02<00:00, 161.60it/s]Loading weights: 100%|██████████| 399/399 [00:02<00:00, 150.71it/s]
+[21:09:16] absorption probe: 32 windows, sites [1, 12, 24], etas [0.01], 3 seeds, dtype float32, scale token, real swaps on: 192 suffix passes of 6 copies
+[21:15:16] absorption probe: 1/32 windows, 6.0 min, about 186.4 min left
+[21:44:08] absorption probe: 6/32 windows, 34.9 min, about 151.1 min left
+[22:13:00] absorption probe: 11/32 windows, 63.7 min, about 121.7 min left
+[22:41:45] absorption probe: 16/32 windows, 92.5 min, about 92.5 min left
+[23:10:33] absorption probe: 21/32 windows, 121.3 min, about 63.5 min left
+[23:39:19] absorption probe: 26/32 windows, 150.0 min, about 34.6 min left
+[00:08:05] absorption probe: 31/32 windows, 178.8 min, about 5.8 min left
+[00:13:51] site   1 eta 0.01: realised/eta 1, rounded away 0, non-finite 0, R_L 0.0313, r = R_L/R_l 3.13 (after final norm 7.28)
+[00:13:51] site  12 eta 0.01: realised/eta 1, rounded away 0, non-finite 0, R_L 0.00545, r = R_L/R_l 0.545 (after final norm 1.42)
+[00:13:51] site  24 eta 0.01: realised/eta 1, rounded away 0, non-finite 0, R_L 0.00354, r = R_L/R_l 0.354 (after final norm 1.11)
+[00:13:51] largest in-batch clean-replica deviation 1.97e-05; wrote /workspace/CloudFare/Depth-Probe/storage/runs/absorption-tests-v2/shuffle_middle_0
+[tests] control: permuted
+Loading weights:   0%|          | 0/399 [00:00<?, ?it/s]Loading weights:   0%|          | 1/399 [00:00<04:05,  1.62it/s]Loading weights:  10%|▉         | 39/399 [00:00<00:04, 72.10it/s]Loading weights:  15%|█▌        | 61/399 [00:00<00:03, 95.50it/s]Loading weights:  20%|██        | 81/399 [00:00<00:02, 116.73it/s]Loading weights:  26%|██▌       | 103/399 [00:01<00:02, 138.08it/s]Loading weights:  31%|███▏      | 125/399 [00:01<00:01, 145.54it/s]Loading weights:  36%|███▌      | 144/399 [00:01<00:01, 148.37it/s]Loading weights:  42%|████▏     | 166/399 [00:01<00:01, 156.55it/s]Loading weights:  47%|████▋     | 189/399 [00:01<00:01, 173.33it/s]Loading weights:  52%|█████▏    | 208/399 [00:01<00:01, 177.63it/s]Loading weights:  57%|█████▋    | 227/399 [00:01<00:01, 167.68it/s]Loading weights:  62%|██████▏   | 246/399 [00:01<00:00, 161.36it/s]Loading weights:  67%|██████▋   | 266/399 [00:02<00:00, 170.76it/s]Loading weights:  73%|███████▎  | 290/399 [00:02<00:00, 175.93it/s]Loading weights:  78%|███████▊  | 312/399 [00:02<00:00, 183.01it/s]Loading weights:  83%|████████▎ | 331/399 [00:02<00:00, 172.08it/s]Loading weights:  89%|████████▊ | 354/399 [00:02<00:00, 183.72it/s]Loading weights:  93%|█████████▎| 373/399 [00:02<00:00, 177.77it/s]Loading weights:  98%|█████████▊| 391/399 [00:02<00:00, 171.96it/s]Loading weights: 100%|██████████| 399/399 [00:02<00:00, 146.35it/s]
+[00:19:39] absorption probe: 32 windows, sites [1, 12, 24], etas [0.01], 3 seeds, dtype float32, scale token, real swaps on: 192 suffix passes of 6 copies
+[00:25:44] absorption probe: 1/32 windows, 6.1 min, about 188.3 min left
+[00:54:36] absorption probe: 6/32 windows, 34.9 min, about 151.4 min left
+[01:23:37] absorption probe: 11/32 windows, 64.0 min, about 122.1 min left
+[01:52:24] absorption probe: 16/32 windows, 92.7 min, about 92.7 min left
+[02:21:58] absorption probe: 21/32 windows, 122.3 min, about 64.1 min left
+[02:51:21] absorption probe: 26/32 windows, 151.7 min, about 35.0 min left
+[03:20:03] absorption probe: 31/32 windows, 180.4 min, about 5.8 min left
+[03:25:52] site   1 eta 0.01: realised/eta 1, rounded away 0, non-finite 0, R_L 1.13, r = R_L/R_l 113 (after final norm 113)
+[03:25:52] site  12 eta 0.01: realised/eta 1, rounded away 0, non-finite 0, R_L 0.56, r = R_L/R_l 56 (after final norm 56.4)
+[03:25:52] site  24 eta 0.01: realised/eta 1, rounded away 0, non-finite 0, R_L 0.119, r = R_L/R_l 11.9 (after final norm 12)
+[03:25:52] largest in-batch clean-replica deviation 0.00222; wrote /workspace/CloudFare/Depth-Probe/storage/runs/absorption-tests-v2/permuted
+[tests] control: random
+[03:27:38] absorption probe: 32 windows, sites [1, 12, 24], etas [0.01], 3 seeds, dtype float32, scale token, real swaps on: 192 suffix passes of 6 copies
+[03:33:34] absorption probe: 1/32 windows, 5.9 min, about 184.1 min left
+[04:02:00] absorption probe: 6/32 windows, 34.4 min, about 148.9 min left
+[04:30:43] absorption probe: 11/32 windows, 63.1 min, about 120.4 min left
+[04:59:27] absorption probe: 16/32 windows, 91.8 min, about 91.8 min left
+[05:27:55] absorption probe: 21/32 windows, 120.3 min, about 63.0 min left
+[05:56:39] absorption probe: 26/32 windows, 149.0 min, about 34.4 min left
+[06:25:07] absorption probe: 31/32 windows, 177.5 min, about 5.7 min left
+[06:30:53] site   1 eta 0.01: realised/eta 1, rounded away 0, non-finite 0, R_L 0.0365, r = R_L/R_l 3.65 (after final norm 3.65)
+[06:30:53] site  12 eta 0.01: realised/eta 1, rounded away 0, non-finite 0, R_L 0.0164, r = R_L/R_l 1.64 (after final norm 1.64)
+[06:30:53] site  24 eta 0.01: realised/eta 1, rounded away 0, non-finite 0, R_L 0.0121, r = R_L/R_l 1.21 (after final norm 1.21)
+[06:30:53] largest in-batch clean-replica deviation 1e-05; wrote /workspace/CloudFare/Depth-Probe/storage/runs/absorption-tests-v2/random
+[06:31:00] deciding controls: ['shuffle_middle_0', 'permuted']; reported only: ['random']
+[06:31:00] site   1: noise survival 37.6, clean signal growth 156 -> Q1 grows
+[06:31:00]            Q2 learned: relative yes (shuffle_middle_0: yes, permuted: not applicable (control saturated), random: yes (reported only)); absolute (v1) yes
+[06:31:00]            Q3 unclear (real vs rotated real: changed 1.42, preserved 1.21; prediction changed at 1.3% of swapped tokens); real vs noise (v1): denoising
+[06:31:00]            Q3 massive coordinates: depends on massive coordinates (denoising on bulk coordinates); Q3 learned: unclear (shuffle_middle_0: unclear, permuted: not applicable (control saturated), random: unclear (reported only))
+[06:31:00]            Q4 steered toward output-relevant directions: noise / size-matched random output effect 2.11 (after the final norm 1.6), real / matched 1.62; vs controls: shuffle_middle_0: no, permuted: not applicable (control saturated), random: no (reported only)
+[06:31:00]            output KL from the clean prediction: noise 6.77e-06, if carried unchanged 9.49e-09; real 1.48e-05
+[06:31:00] site  12: noise survival 8.13, clean signal growth 27.3 -> Q1 grows
+[06:31:00]            Q2 learned: relative yes (shuffle_middle_0: yes, permuted: not applicable (control saturated), random: yes (reported only)); absolute (v1) yes
+[06:31:00]            Q3 denoising (real vs rotated real: changed 2.13, preserved 1.99; prediction changed at 1.3% of swapped tokens); real vs noise (v1): denoising
+[06:31:00]            Q3 massive coordinates: robust (same verdict on bulk coordinates); Q3 learned: unclear (shuffle_middle_0: unclear, permuted: not applicable (control saturated), random: yes (reported only))
+[06:31:00]            Q4 steered toward output-relevant directions: noise / size-matched random output effect 2.05 (after the final norm 1.74), real / matched 2.01; vs controls: shuffle_middle_0: no, permuted: not applicable (control saturated), random: no (reported only)
+[06:31:00]            output KL from the clean prediction: noise 2.32e-05, if carried unchanged 3.1e-07; real 8.6e-05
+[06:31:00] site  24: noise survival 2.5, clean signal growth 8.23 -> Q1 grows
+[06:31:00]            Q2 learned: relative no (shuffle_middle_0: no, permuted: not applicable (control saturated), random: yes (reported only)); absolute (v1) yes
+[06:31:00]            Q3 denoising (real vs rotated real: changed 1.95, preserved 1.87; prediction changed at 1.3% of swapped tokens); real vs noise (v1): denoising
+[06:31:00]            Q3 massive coordinates: robust (same verdict on bulk coordinates); Q3 learned: no (shuffle_middle_0: no, permuted: not applicable (control saturated), random: yes (reported only))
+[06:31:00]            Q4 steered toward output-relevant directions: noise / size-matched random output effect 1.52 (after the final norm 1.57), real / matched 1.33; vs controls: shuffle_middle_0: no, permuted: not applicable (control saturated), random: no (reported only)
+[06:31:00]            output KL from the clean prediction: noise 3.1e-05, if carried unchanged 3.12e-06; real 0.000121
+[06:31:01] wrote /workspace/CloudFare/Depth-Probe/storage/runs/absorption-tests-v2/report
+[tests] done: answers in /workspace/CloudFare/Depth-Probe/storage/runs/absorption-tests-v2/report/verdict.json, plot in /workspace/CloudFare/Depth-Probe/storage/runs/absorption-tests-v2/report/tests.png

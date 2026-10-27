@@ -1,0 +1,939 @@
+{
+  "command": "analyze-absorption",
+  "args": {
+    "command": "analyze-absorption",
+    "runs": [
+      "/workspace/CloudFare/Depth-Probe/storage/runs/absorption-tests-v2/trained",
+      "/workspace/CloudFare/Depth-Probe/storage/runs/absorption-tests-v2/shuffle_middle_0",
+      "/workspace/CloudFare/Depth-Probe/storage/runs/absorption-tests-v2/permuted",
+      "/workspace/CloudFare/Depth-Probe/storage/runs/absorption-tests-v2/random"
+    ],
+    "reference": "trained",
+    "eta": 0.01,
+    "margin_ratio": 1.25,
+    "bootstrap": 1000,
+    "seed": 0,
+    "out": "/workspace/CloudFare/Depth-Probe/storage/runs/absorption-tests-v2/report",
+    "overwrite": true,
+    "run": "<function command_analyze_absorption at 0xf76e34269b20>"
+  },
+  "reference": "trained",
+  "eta": 0.01,
+  "margin_log": 0.22314355131420976,
+  "deciding_controls": [
+    "shuffle_middle_0",
+    "permuted"
+  ],
+  "answers": [
+    {
+      "site": 1,
+      "q1_noise_itself": "grows",
+      "q2_learned": {
+        "answer": "yes",
+        "per_control": "shuffle_middle_0: yes, permuted: not applicable (control saturated), random: no (reported only)"
+      },
+      "q2_relative_learned": {
+        "answer": "yes",
+        "per_control": "shuffle_middle_0: yes, permuted: not applicable (control saturated), random: yes (reported only)"
+      },
+      "q3_kind": "unclear",
+      "q3_statistic": "real vs rotated real",
+      "q3_vs_noise_v1": "denoising",
+      "q3_without_massive_coordinates": "depends on massive coordinates (denoising on bulk coordinates)",
+      "q3_learned": {
+        "answer": "unclear",
+        "per_control": "shuffle_middle_0: unclear, permuted: not applicable (control saturated), random: unclear (reported only)"
+      },
+      "q4_noise_steering": "steered toward output-relevant directions",
+      "q4_trained_steers_away_more": {
+        "answer": "no",
+        "per_control": "shuffle_middle_0: no, permuted: not applicable (control saturated), random: no (reported only)"
+      }
+    },
+    {
+      "site": 12,
+      "q1_noise_itself": "grows",
+      "q2_learned": {
+        "answer": "yes",
+        "per_control": "shuffle_middle_0: yes, permuted: not applicable (control saturated), random: no (reported only)"
+      },
+      "q2_relative_learned": {
+        "answer": "yes",
+        "per_control": "shuffle_middle_0: yes, permuted: not applicable (control saturated), random: yes (reported only)"
+      },
+      "q3_kind": "denoising",
+      "q3_statistic": "real vs rotated real",
+      "q3_vs_noise_v1": "denoising",
+      "q3_without_massive_coordinates": "robust (same verdict on bulk coordinates)",
+      "q3_learned": {
+        "answer": "unclear",
+        "per_control": "shuffle_middle_0: unclear, permuted: not applicable (control saturated), random: yes (reported only)"
+      },
+      "q4_noise_steering": "steered toward output-relevant directions",
+      "q4_trained_steers_away_more": {
+        "answer": "no",
+        "per_control": "shuffle_middle_0: no, permuted: not applicable (control saturated), random: no (reported only)"
+      }
+    },
+    {
+      "site": 24,
+      "q1_noise_itself": "grows",
+      "q2_learned": {
+        "answer": "yes",
+        "per_control": "shuffle_middle_0: yes, permuted: not applicable (control saturated), random: no (reported only)"
+      },
+      "q2_relative_learned": {
+        "answer": "no",
+        "per_control": "shuffle_middle_0: no, permuted: not applicable (control saturated), random: yes (reported only)"
+      },
+      "q3_kind": "denoising",
+      "q3_statistic": "real vs rotated real",
+      "q3_vs_noise_v1": "denoising",
+      "q3_without_massive_coordinates": "robust (same verdict on bulk coordinates)",
+      "q3_learned": {
+        "answer": "no",
+        "per_control": "shuffle_middle_0: no, permuted: not applicable (control saturated), random: yes (reported only)"
+      },
+      "q4_noise_steering": "steered toward output-relevant directions",
+      "q4_trained_steers_away_more": {
+        "answer": "no",
+        "per_control": "shuffle_middle_0: no, permuted: not applicable (control saturated), random: no (reported only)"
+      }
+    }
+  ],
+  "rows": [
+    {
+      "site": 1,
+      "eta": 0.01,
+      "log_noise_survival": {
+        "value": 3.626308985427894,
+        "low": 3.3601803218184165,
+        "high": 3.8859186592758843
+      },
+      "log_signal_growth": {
+        "value": 5.053048240930253,
+        "low": 5.034993756991348,
+        "high": 5.072266588257551
+      },
+      "log_spread_growth": {
+        "value": 4.627384583610232,
+        "low": 4.604654207977497,
+        "high": 4.6511146896177
+      },
+      "log_relative_absorption": {
+        "value": -1.4267392555023592,
+        "low": -1.6877021206078566,
+        "high": -1.1707756137360117
+      },
+      "log_absorption_vs_spread": {
+        "value": -1.0010755981823385,
+        "low": -1.2650864443025711,
+        "high": -0.7450661178076324
+      },
+      "q1": "grows",
+      "log_real_survival_changed": {
+        "value": 3.3164923329627705,
+        "low": 3.171121813172451,
+        "high": 3.4675002673174045
+      },
+      "log_rotated_survival_changed": {
+        "value": 2.966748944220663,
+        "low": 2.843086067441579,
+        "high": 3.087024699693062
+      },
+      "log_noise_survival_changed": {
+        "value": 2.960978346610279,
+        "low": 2.8491118111385214,
+        "high": 3.080241445815477
+      },
+      "log_selectivity_changed": {
+        "value": 0.34974338874210753,
+        "low": 0.25455428433290406,
+        "high": 0.45202719562393734
+      },
+      "log_real_over_noise_changed": {
+        "value": 0.35551398635249143,
+        "low": 0.2633718283814235,
+        "high": 0.45345702365122903
+      },
+      "log_rotated_over_noise_changed": {
+        "value": 0.0057705976103838985,
+        "low": -0.10446031418078852,
+        "high": 0.1145158397935492
+      },
+      "log_selectivity_changed_bulk": {
+        "value": 0.3449064517260614,
+        "low": 0.24666727880808365,
+        "high": 0.4527508227276542
+      },
+      "log_bulk_minus_full_changed": {
+        "value": -0.00483693701604615,
+        "low": -0.021307074263630044,
+        "high": 0.013567127941526725
+      },
+      "log_real_survival_preserved": {
+        "value": 3.9260740364274813,
+        "low": 3.6913450325409527,
+        "high": 4.1495033587674515
+      },
+      "log_rotated_survival_preserved": {
+        "value": 3.731614270331695,
+        "low": 3.4206614512724207,
+        "high": 4.059065495947577
+      },
+      "log_noise_survival_preserved": {
+        "value": 3.635178804252063,
+        "low": 3.366167746819569,
+        "high": 3.896814382870501
+      },
+      "log_selectivity_preserved": {
+        "value": 0.19445976609578652,
+        "low": -0.0031879005717332797,
+        "high": 0.3668398880055146
+      },
+      "log_real_over_noise_preserved": {
+        "value": 0.29089523217541835,
+        "low": 0.21190242366962925,
+        "high": 0.3719835528373703
+      },
+      "log_rotated_over_noise_preserved": {
+        "value": 0.09643546607963183,
+        "low": -0.12773365292100292,
+        "high": 0.3356621339339885
+      },
+      "log_selectivity_preserved_bulk": {
+        "value": 0.24429707634772768,
+        "low": 0.112273689235507,
+        "high": 0.36852318393137695
+      },
+      "log_bulk_minus_full_preserved": {
+        "value": 0.04983731025194116,
+        "low": -0.011109374459227871,
+        "high": 0.12663815750156396
+      },
+      "changed_fraction": 0.013075617028325328,
+      "q3_statistic": "real vs rotated real",
+      "q3": "unclear",
+      "q3_vs_noise": "denoising",
+      "q3_bulk": "denoising",
+      "q3_massive_check": "depends on massive coordinates (denoising on bulk coordinates)",
+      "massive_share_noise_site": 0.0010888942000657487,
+      "massive_share_noise_last": 0.2009299503678289,
+      "massive_share_real_site": 0.024995232120744615,
+      "massive_share_real_last": 0.19336112817560658,
+      "massive_share_rotated_site": 0.0011027565523236138,
+      "massive_share_rotated_last": 0.4115867902610614,
+      "output_kl_noise": 6.767125944130196e-06,
+      "output_kl_carry_noise": 9.48817854450632e-09,
+      "log_repaired_noise": {
+        "value": 6.569785087568354,
+        "low": 6.387899785858184,
+        "high": 6.766468970193543
+      },
+      "output_kl_real": 1.4787718220853588e-05,
+      "output_kl_carry_real": 9.769916706563633e-09,
+      "log_repaired_real": {
+        "value": 7.3222443247039495,
+        "low": 7.126842522034216,
+        "high": 7.530918300414734
+      },
+      "output_kl_rotated": 8.931303930659694e-06,
+      "output_kl_carry_rotated": 9.41427726868562e-09,
+      "log_repaired_rotated": {
+        "value": 6.855090284734273,
+        "low": 6.597885682562063,
+        "high": 7.17415402177722
+      },
+      "log_steering_noise": {
+        "value": 0.7487759277703644,
+        "low": 0.5913779403353119,
+        "high": 0.8959529470838163
+      },
+      "q4": "steered toward output-relevant directions",
+      "log_steering_noise_post_norm": {
+        "value": 0.4726045341847851,
+        "low": 0.20366750201518685,
+        "high": 0.8679072203896824
+      },
+      "log_steering_real": {
+        "value": 0.4806164711082997,
+        "low": 0.06996514805048475,
+        "high": 0.8567696639404846
+      },
+      "log_steering_rotated": {
+        "value": 0.37772536420997327,
+        "low": -0.18160903785395832,
+        "high": 0.8152293605086932
+      },
+      "log_steering_noise_fixed_size": {
+        "value": -1.7054427045175644,
+        "low": -2.1792324308665743,
+        "high": -1.0555896410845746
+      }
+    },
+    {
+      "site": 12,
+      "eta": 0.01,
+      "log_noise_survival": {
+        "value": 2.095848587564854,
+        "low": 1.9023964768318495,
+        "high": 2.306648867523133
+      },
+      "log_signal_growth": {
+        "value": 3.305551432712948,
+        "low": 3.289590415872898,
+        "high": 3.322773040031875
+      },
+      "log_spread_growth": {
+        "value": 2.8358855927517084,
+        "low": 2.821447770526652,
+        "high": 2.8506084844627497
+      },
+      "log_relative_absorption": {
+        "value": -1.2097028451480942,
+        "low": -1.4026710443640353,
+        "high": -1.000279676887338
+      },
+      "log_absorption_vs_spread": {
+        "value": -0.7400370051868546,
+        "low": -0.9339676650730199,
+        "high": -0.5280275948240608
+      },
+      "q1": "grows",
+      "log_real_survival_changed": {
+        "value": 2.6107403658497095,
+        "low": 2.477811050918057,
+        "high": 2.762363604099748
+      },
+      "log_rotated_survival_changed": {
+        "value": 1.8550778915729922,
+        "low": 1.7931832322155694,
+        "high": 1.920683851698796
+      },
+      "log_noise_survival_changed": {
+        "value": 1.7642078260867224,
+        "low": 1.703192891521327,
+        "high": 1.828669872227039
+      },
+      "log_selectivity_changed": {
+        "value": 0.7556624742767173,
+        "low": 0.6457232733594455,
+        "high": 0.9016262444381499
+      },
+      "log_real_over_noise_changed": {
+        "value": 0.846532539762987,
+        "low": 0.7307026142761858,
+        "high": 0.9879222876949961
+      },
+      "log_rotated_over_noise_changed": {
+        "value": 0.09087006548626975,
+        "low": 0.0619256512491789,
+        "high": 0.11904707151996655
+      },
+      "log_selectivity_changed_bulk": {
+        "value": 0.708353910191099,
+        "low": 0.6203175765239737,
+        "high": 0.8238623653015341
+      },
+      "log_bulk_minus_full_changed": {
+        "value": -0.04730856408561834,
+        "low": -0.08005330776090398,
+        "high": -0.018116340331160986
+      },
+      "log_real_survival_preserved": {
+        "value": 2.8154858740641076,
+        "low": 2.6852715160081737,
+        "high": 2.952811893468
+      },
+      "log_rotated_survival_preserved": {
+        "value": 2.125413152796234,
+        "low": 1.9616256108441947,
+        "high": 2.3130478486729427
+      },
+      "log_noise_survival_preserved": {
+        "value": 2.1024169685925336,
+        "low": 1.9060163702264024,
+        "high": 2.315592521443414
+      },
+      "log_selectivity_preserved": {
+        "value": 0.6900727212678737,
+        "low": 0.5875420788081882,
+        "high": 0.7856092286912404
+      },
+      "log_real_over_noise_preserved": {
+        "value": 0.713068905471574,
+        "low": 0.5919576936484287,
+        "high": 0.8205201089630136
+      },
+      "log_rotated_over_noise_preserved": {
+        "value": 0.02299618420370031,
+        "low": -0.03441231807215561,
+        "high": 0.08035117699045582
+      },
+      "log_selectivity_preserved_bulk": {
+        "value": 0.6769248824970902,
+        "low": 0.5944259451700218,
+        "high": 0.7531115481104294
+      },
+      "log_bulk_minus_full_preserved": {
+        "value": -0.013147838770783515,
+        "low": -0.036198480267415754,
+        "high": 0.008140880728127117
+      },
+      "changed_fraction": 0.013059932994168012,
+      "q3_statistic": "real vs rotated real",
+      "q3": "denoising",
+      "q3_vs_noise": "denoising",
+      "q3_bulk": "denoising",
+      "q3_massive_check": "robust (same verdict on bulk coordinates)",
+      "massive_share_noise_site": 0.0004729376576932953,
+      "massive_share_noise_last": 0.20380302857563937,
+      "massive_share_real_site": 0.01915846856803971,
+      "massive_share_real_last": 0.25261739506299297,
+      "massive_share_rotated_site": 0.00046411914542243693,
+      "massive_share_rotated_last": 0.2383999820752195,
+      "output_kl_noise": 2.3222702865536493e-05,
+      "output_kl_carry_noise": 3.0972770260112947e-07,
+      "log_repaired_noise": {
+        "value": 4.317192118182995,
+        "low": 4.259739852019914,
+        "high": 4.38533235048922
+      },
+      "output_kl_real": 8.60147462307277e-05,
+      "output_kl_carry_real": 3.3472052925698856e-07,
+      "log_repaired_real": {
+        "value": 5.548978085707426,
+        "low": 5.441881063963655,
+        "high": 5.689661299515854
+      },
+      "output_kl_rotated": 3.0371536315447698e-05,
+      "output_kl_carry_rotated": 3.1021854789203973e-07,
+      "log_repaired_rotated": {
+        "value": 4.583984101085344,
+        "low": 4.518336618622178,
+        "high": 4.653017533261567
+      },
+      "log_steering_noise": {
+        "value": 0.7171126438957088,
+        "low": 0.4095458317794575,
+        "high": 0.9424949003016656
+      },
+      "q4": "steered toward output-relevant directions",
+      "log_steering_noise_post_norm": {
+        "value": 0.555758652620242,
+        "low": 0.16326501907136806,
+        "high": 0.9685870298462487
+      },
+      "log_steering_real": {
+        "value": 0.6968733857244355,
+        "low": 0.5482246475411838,
+        "high": 0.8454437992876841
+      },
+      "log_steering_rotated": {
+        "value": 0.7774033963037132,
+        "low": 0.513534959796518,
+        "high": 0.9629855686645351
+      },
+      "log_steering_noise_fixed_size": {
+        "value": -0.6596182275650307,
+        "low": -1.1959193093354106,
+        "high": -0.009036493052354232
+      }
+    },
+    {
+      "site": 24,
+      "eta": 0.01,
+      "log_noise_survival": {
+        "value": 0.915471209526514,
+        "low": 0.882621128175472,
+        "high": 0.9463943302148268
+      },
+      "log_signal_growth": {
+        "value": 2.107443142968968,
+        "low": 2.0641510320109355,
+        "high": 2.142704309409867
+      },
+      "log_spread_growth": {
+        "value": 1.6592045208123232,
+        "low": 1.5955002229843336,
+        "high": 1.7123542190255352
+      },
+      "log_relative_absorption": {
+        "value": -1.1919719334424541,
+        "low": -1.2248783683929878,
+        "high": -1.1568816921805516
+      },
+      "log_absorption_vs_spread": {
+        "value": -0.7437333112858092,
+        "low": -0.7794455441470955,
+        "high": -0.6999385085569755
+      },
+      "q1": "grows",
+      "log_real_survival_changed": {
+        "value": 1.7105313885885458,
+        "low": 1.6660180179081074,
+        "high": 1.7583969421269385
+      },
+      "log_rotated_survival_changed": {
+        "value": 1.0424525099153552,
+        "low": 1.0001758527200844,
+        "high": 1.097001603255017
+      },
+      "log_noise_survival_changed": {
+        "value": 0.9208911501677064,
+        "low": 0.8864958808469681,
+        "high": 0.9591166252429545
+      },
+      "log_selectivity_changed": {
+        "value": 0.6680788786731906,
+        "low": 0.6111741448262735,
+        "high": 0.7157904042904807
+      },
+      "log_real_over_noise_changed": {
+        "value": 0.7896402384208394,
+        "low": 0.7500526799133691,
+        "high": 0.8276477935124406
+      },
+      "log_rotated_over_noise_changed": {
+        "value": 0.12156135974764881,
+        "low": 0.09059170640541182,
+        "high": 0.16513344879272543
+      },
+      "log_selectivity_changed_bulk": {
+        "value": 0.5360526793525372,
+        "low": 0.506636762167551,
+        "high": 0.5643727753271108
+      },
+      "log_bulk_minus_full_changed": {
+        "value": -0.1320261993206534,
+        "low": -0.1683391878720973,
+        "high": -0.08689070742345122
+      },
+      "log_real_survival_preserved": {
+        "value": 1.65755480049557,
+        "low": 1.5890374220465302,
+        "high": 1.7147766563383937
+      },
+      "log_rotated_survival_preserved": {
+        "value": 1.0339184334767275,
+        "low": 0.9973092821444873,
+        "high": 1.0674002762730503
+      },
+      "log_noise_survival_preserved": {
+        "value": 0.915675046016858,
+        "low": 0.8821810199115643,
+        "high": 0.9469980310651902
+      },
+      "log_selectivity_preserved": {
+        "value": 0.6236363670188425,
+        "low": 0.5707619095963105,
+        "high": 0.6749425996669471
+      },
+      "log_real_over_noise_preserved": {
+        "value": 0.741879754478712,
+        "low": 0.6854456708759508,
+        "high": 0.7941820744861464
+      },
+      "log_rotated_over_noise_preserved": {
+        "value": 0.11824338745986951,
+        "low": 0.10956345281478626,
+        "high": 0.1259045931615563
+      },
+      "log_selectivity_preserved_bulk": {
+        "value": 0.4822837120453546,
+        "low": 0.44176969986581943,
+        "high": 0.522253721067988
+      },
+      "log_bulk_minus_full_preserved": {
+        "value": -0.14135265497348792,
+        "low": -0.19217601903338297,
+        "high": -0.0852770974376382
+      },
+      "changed_fraction": 0.013059932994168012,
+      "q3_statistic": "real vs rotated real",
+      "q3": "denoising",
+      "q3_vs_noise": "denoising",
+      "q3_bulk": "denoising",
+      "q3_massive_check": "robust (same verdict on bulk coordinates)",
+      "massive_share_noise_site": 0.0005114186272688892,
+      "massive_share_noise_last": 0.10689889857804458,
+      "massive_share_real_site": 0.12109257586782529,
+      "massive_share_real_last": 0.40957852237364345,
+      "massive_share_rotated_site": 0.000555034850895475,
+      "massive_share_rotated_last": 0.10585832751848345,
+      "output_kl_noise": 3.102609599621327e-05,
+      "output_kl_carry_noise": 3.116602994740693e-06,
+      "log_repaired_noise": {
+        "value": 2.298085031765542,
+        "low": 2.2373208673525196,
+        "high": 2.3727789672867803
+      },
+      "output_kl_real": 0.0001209509575676209,
+      "output_kl_carry_real": 5.116784864899019e-06,
+      "log_repaired_real": {
+        "value": 3.162858868348186,
+        "low": 3.1192344986699787,
+        "high": 3.2031455986110466
+      },
+      "output_kl_rotated": 3.9528944674816086e-05,
+      "output_kl_carry_rotated": 3.227538050917874e-06,
+      "log_repaired_rotated": {
+        "value": 2.5053135468708607,
+        "low": 2.4125981506025633,
+        "high": 2.585544303879955
+      },
+      "log_steering_noise": {
+        "value": 0.41797809273949366,
+        "low": 0.380236516802138,
+        "high": 0.4543976415959517
+      },
+      "q4": "steered toward output-relevant directions",
+      "log_steering_noise_post_norm": {
+        "value": 0.45329581396588886,
+        "low": 0.40991944907238786,
+        "high": 0.4968312991898034
+      },
+      "log_steering_real": {
+        "value": 0.285780539901368,
+        "low": 0.1942661209539767,
+        "high": 0.37518207608632187
+      },
+      "log_steering_rotated": {
+        "value": 0.3953477866349058,
+        "low": 0.37078219792464684,
+        "high": 0.4190316403770526
+      },
+      "log_steering_noise_fixed_size": {
+        "value": 0.04554943230776287,
+        "low": -0.03410293565888337,
+        "high": 0.12015935400324008
+      }
+    }
+  ],
+  "comparisons": [
+    {
+      "control": "shuffle_middle_0",
+      "site": 1,
+      "eta": 0.01,
+      "control_last_relative_error": 0.0313063043092067,
+      "control_saturated": false,
+      "log_control_over_trained": {
+        "value": 7.512636523883556,
+        "low": 7.20925881993515,
+        "high": 7.823052448100876
+      },
+      "trained_shrinks_more": "yes",
+      "log_relative_control_over_trained": {
+        "value": 2.4424852258171414,
+        "low": 2.0915755653216985,
+        "high": 2.8013411625133604
+      },
+      "trained_relative_lower": "yes",
+      "log_selectivity_trained_over_control_changed": {
+        "value": 0.22497643702943693,
+        "low": 0.08531279299817737,
+        "high": 0.35915936331615056
+      },
+      "log_selectivity_trained_over_control_preserved": {
+        "value": 0.13393421445978726,
+        "low": -0.059193104259216735,
+        "high": 0.3102172588484776
+      },
+      "selectivity_learned": "unclear",
+      "log_steering_control_minus_trained": {
+        "value": -2.2269937532716133,
+        "low": -2.408264080926051,
+        "high": -2.0554482032416397
+      },
+      "trained_steers_away_more": "no"
+    },
+    {
+      "control": "shuffle_middle_0",
+      "site": 12,
+      "eta": 0.01,
+      "control_last_relative_error": 0.00544969431454471,
+      "control_saturated": false,
+      "log_control_over_trained": {
+        "value": 2.7343698860247425,
+        "low": 2.439919701843248,
+        "high": 2.9949850892466934
+      },
+      "trained_shrinks_more": "yes",
+      "log_relative_control_over_trained": {
+        "value": 0.4700437309989254,
+        "low": 0.13283524796969887,
+        "high": 0.7667681989232737
+      },
+      "trained_relative_lower": "yes",
+      "log_selectivity_trained_over_control_changed": {
+        "value": 0.19683541931157378,
+        "low": 0.03531853809907337,
+        "high": 0.36353299867489974
+      },
+      "log_selectivity_trained_over_control_preserved": {
+        "value": 0.11450709545945248,
+        "low": -0.017120563994423507,
+        "high": 0.2490290422514311
+      },
+      "selectivity_learned": "unclear",
+      "log_steering_control_minus_trained": {
+        "value": -2.384962224949171,
+        "low": -2.6341717700982734,
+        "high": -2.0741268821763064
+      },
+      "trained_steers_away_more": "no"
+    },
+    {
+      "control": "shuffle_middle_0",
+      "site": 24,
+      "eta": 0.01,
+      "control_last_relative_error": 0.003542458568214594,
+      "control_saturated": false,
+      "log_control_over_trained": {
+        "value": 3.166021802549389,
+        "low": 3.015489447409138,
+        "high": 3.2956385620638096
+      },
+      "trained_shrinks_more": "yes",
+      "log_relative_control_over_trained": {
+        "value": 0.04770506688783849,
+        "low": -0.11711483244450427,
+        "high": 0.1885072710399572
+      },
+      "trained_relative_lower": "no",
+      "log_selectivity_trained_over_control_changed": {
+        "value": -0.12605962709661345,
+        "low": -0.30945740924199816,
+        "high": 0.048191029131649785
+      },
+      "log_selectivity_trained_over_control_preserved": {
+        "value": -0.1952453025619103,
+        "low": -0.2971976883146444,
+        "high": -0.0993314006862779
+      },
+      "selectivity_learned": "no",
+      "log_steering_control_minus_trained": {
+        "value": -1.9457346278946335,
+        "low": -2.049390447095936,
+        "high": -1.8386263063124206
+      },
+      "trained_steers_away_more": "no"
+    },
+    {
+      "control": "permuted",
+      "site": 1,
+      "eta": 0.01,
+      "control_last_relative_error": 1.128014122446378,
+      "control_saturated": true,
+      "log_control_over_trained": {
+        "value": 7.120323155763279,
+        "low": 6.861286477799551,
+        "high": 7.385384930079723
+      },
+      "trained_shrinks_more": "not applicable (control saturated)",
+      "log_relative_control_over_trained": {
+        "value": 6.152286343727599,
+        "low": 5.894480359293912,
+        "high": 6.4123840776100565
+      },
+      "trained_relative_lower": "not applicable (control saturated)",
+      "log_selectivity_trained_over_control_changed": {
+        "value": 0.3512502940823663,
+        "low": 0.25565187143909723,
+        "high": 0.45473950242205335
+      },
+      "log_selectivity_trained_over_control_preserved": {
+        "value": 0.1947367649278875,
+        "low": -0.0028810355664826014,
+        "high": 0.36691060898024846
+      },
+      "selectivity_learned": "not applicable (control saturated)",
+      "log_steering_control_minus_trained": {
+        "value": -0.10672214647074174,
+        "low": -0.25230520029917575,
+        "high": 0.05006439025655101
+      },
+      "trained_steers_away_more": "not applicable (control saturated)"
+    },
+    {
+      "control": "permuted",
+      "site": 12,
+      "eta": 0.01,
+      "control_last_relative_error": 0.5597653842220703,
+      "control_saturated": true,
+      "log_control_over_trained": {
+        "value": 4.468912798243234,
+        "low": 4.255143113772498,
+        "high": 4.66070324156606
+      },
+      "trained_shrinks_more": "not applicable (control saturated)",
+      "log_relative_control_over_trained": {
+        "value": 5.234474699069699,
+        "low": 5.023957606733324,
+        "high": 5.430102762214039
+      },
+      "trained_relative_lower": "not applicable (control saturated)",
+      "log_selectivity_trained_over_control_changed": {
+        "value": 0.8168512730052491,
+        "low": 0.7079214426770734,
+        "high": 0.966094729831212
+      },
+      "log_selectivity_trained_over_control_preserved": {
+        "value": 0.741554127835272,
+        "low": 0.6398811730232221,
+        "high": 0.8359305213067982
+      },
+      "selectivity_learned": "not applicable (control saturated)",
+      "log_steering_control_minus_trained": {
+        "value": -0.5015631664847954,
+        "low": -0.7276630767439559,
+        "high": -0.19381203239014969
+      },
+      "trained_steers_away_more": "not applicable (control saturated)"
+    },
+    {
+      "control": "permuted",
+      "site": 24,
+      "eta": 0.01,
+      "control_last_relative_error": 0.11931629517736535,
+      "control_saturated": true,
+      "log_control_over_trained": {
+        "value": 3.268675000210266,
+        "low": 3.2340849947406776,
+        "high": 3.305818828744409
+      },
+      "trained_shrinks_more": "not applicable (control saturated)",
+      "log_relative_control_over_trained": {
+        "value": 3.6709526926994287,
+        "low": 3.6289916835208387,
+        "high": 3.709383846723418
+      },
+      "trained_relative_lower": "not applicable (control saturated)",
+      "log_selectivity_trained_over_control_changed": {
+        "value": 0.8229134473801625,
+        "low": 0.7659737099333986,
+        "high": 0.8710696004213055
+      },
+      "log_selectivity_trained_over_control_preserved": {
+        "value": 0.7698089265658778,
+        "low": 0.7185696055435976,
+        "high": 0.8192529992274337
+      },
+      "selectivity_learned": "not applicable (control saturated)",
+      "log_steering_control_minus_trained": {
+        "value": -0.4071179280525774,
+        "low": -0.44361369818733515,
+        "high": -0.3692178767172467
+      },
+      "trained_steers_away_more": "not applicable (control saturated)"
+    },
+    {
+      "control": "random",
+      "site": 1,
+      "eta": 0.01,
+      "control_last_relative_error": 0.03649522779354205,
+      "control_saturated": false,
+      "log_control_over_trained": {
+        "value": -0.5065188502586091,
+        "low": -0.7636706492850645,
+        "high": -0.24228848729564362
+      },
+      "trained_shrinks_more": "no",
+      "log_relative_control_over_trained": {
+        "value": 2.721202240397906,
+        "low": 2.463048659820003,
+        "high": 2.9811329379425264
+      },
+      "trained_relative_lower": "yes",
+      "log_selectivity_trained_over_control_changed": {
+        "value": 0.3522636191884305,
+        "low": 0.25514141041894367,
+        "high": 0.45489167406581993
+      },
+      "log_selectivity_trained_over_control_preserved": {
+        "value": 0.19648874257845117,
+        "low": -0.0015450192264684455,
+        "high": 0.3685079420324462
+      },
+      "selectivity_learned": "unclear",
+      "log_steering_control_minus_trained": {
+        "value": -0.7478042374271842,
+        "low": -0.8949699931026239,
+        "high": -0.5904248330762969
+      },
+      "trained_steers_away_more": "no"
+    },
+    {
+      "control": "random",
+      "site": 12,
+      "eta": 0.01,
+      "control_last_relative_error": 0.016398223233409226,
+      "control_saturated": false,
+      "log_control_over_trained": {
+        "value": -1.059456061752886,
+        "low": -1.2708698013433288,
+        "high": -0.8661122796986612
+      },
+      "trained_shrinks_more": "no",
+      "log_relative_control_over_trained": {
+        "value": 1.7042546539988508,
+        "low": 1.4943430529507846,
+        "high": 1.8982200812646977
+      },
+      "trained_relative_lower": "yes",
+      "log_selectivity_trained_over_control_changed": {
+        "value": 0.762863605216946,
+        "low": 0.6525684947931355,
+        "high": 0.9106859383040342
+      },
+      "log_selectivity_trained_over_control_preserved": {
+        "value": 0.6912606325386954,
+        "low": 0.5887452748667326,
+        "high": 0.786303433238676
+      },
+      "selectivity_learned": "yes",
+      "log_steering_control_minus_trained": {
+        "value": -0.7169376162823026,
+        "low": -0.9423197254215919,
+        "high": -0.40936080180076106
+      },
+      "trained_steers_away_more": "no"
+    },
+    {
+      "control": "random",
+      "site": 24,
+      "eta": 0.01,
+      "control_last_relative_error": 0.012054205619885275,
+      "control_saturated": false,
+      "log_control_over_trained": {
+        "value": -0.5285456992723773,
+        "low": -0.5594706117120013,
+        "high": -0.49567411488088814
+      },
+      "trained_shrinks_more": "no",
+      "log_relative_control_over_trained": {
+        "value": 1.378787195425768,
+        "low": 1.34369400971692,
+        "high": 1.4118980567938908
+      },
+      "trained_relative_lower": "yes",
+      "log_selectivity_trained_over_control_changed": {
+        "value": 0.677786813873607,
+        "low": 0.6209296549509801,
+        "high": 0.7254634981349026
+      },
+      "log_selectivity_trained_over_control_preserved": {
+        "value": 0.6257604626457907,
+        "low": 0.5730332626596516,
+        "high": 0.6768254772114973
+      },
+      "selectivity_learned": "yes",
+      "log_steering_control_minus_trained": {
+        "value": -0.4179199572304206,
+        "low": -0.4542873908257573,
+        "high": -0.3801776770807166
+      },
+      "trained_steers_away_more": "no"
+    }
+  ]
+}

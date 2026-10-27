@@ -1,0 +1,308 @@
+{
+  "tool": "depthprobe",
+  "version": "0.1.0",
+  "command": "reproduce-absorption",
+  "args": {
+    "command": "reproduce-absorption",
+    "model": "/workspace/models/qwen3-8b",
+    "model_revision": null,
+    "dtype": "float32",
+    "readout_dtype": "float32",
+    "device": "auto",
+    "attn": null,
+    "init": "random",
+    "init_seed": 0,
+    "shuffle": "none",
+    "shuffle_seed": 0,
+    "data": "/workspace/data/c4/en/c4-validation.00001-of-00008.json.gz",
+    "split": "validation",
+    "max_tokens": 65536,
+    "joiner": "",
+    "ctx": 2048,
+    "stride": 2048,
+    "prepend_bos": false,
+    "batch_size": 1,
+    "chunk": 1024,
+    "sites": "1,12,24",
+    "etas": "1e-2",
+    "seeds": 3,
+    "scale": "token",
+    "exclude_sinks": true,
+    "sink_factor": 10.0,
+    "every": 1,
+    "replicas": 5,
+    "real_swaps": true,
+    "output_kl": false,
+    "sinks_from": "/workspace/CloudFare/Depth-Probe/storage/runs/absorption-tests-v2/trained",
+    "bootstrap": 1000,
+    "label": "random",
+    "out": "/workspace/CloudFare/Depth-Probe/storage/runs/absorption-tests-v2/random",
+    "overwrite": true,
+    "run": "<function command_reproduce_absorption at 0xf9a18cc5da80>"
+  },
+  "environment": {
+    "python": "3.12.3",
+    "platform": "Linux-6.17.0-1026-nvidia-aarch64-with-glibc2.39",
+    "torch": "2.8.0a0+34c6371d24.nv25.08",
+    "torch_cuda": "13.0",
+    "transformers": "5.20.2",
+    "numpy": "1.26.4",
+    "device": "NVIDIA GB10",
+    "tf32_matmul": false,
+    "source_sha256": "d4f3a90a3c046a0944238e069d07641f32862ac5dd0aeda260d6136d2a7ab420",
+    "created_utc": "2026-10-27T06:30:53Z"
+  },
+  "model": {
+    "path": "/workspace/models/qwen3-8b",
+    "files": [
+      {
+        "name": "config.json",
+        "bytes": 728
+      },
+      {
+        "name": "generation_config.json",
+        "bytes": 239
+      },
+      {
+        "name": "merges.txt",
+        "bytes": 1671853
+      },
+      {
+        "name": "model-00001-of-00005.safetensors",
+        "bytes": 3996250744
+      },
+      {
+        "name": "model-00002-of-00005.safetensors",
+        "bytes": 3993160032
+      },
+      {
+        "name": "model-00003-of-00005.safetensors",
+        "bytes": 3959604768
+      },
+      {
+        "name": "model-00004-of-00005.safetensors",
+        "bytes": 3187841392
+      },
+      {
+        "name": "model-00005-of-00005.safetensors",
+        "bytes": 1244659840
+      },
+      {
+        "name": "model.safetensors.index.json",
+        "bytes": 32878
+      },
+      {
+        "name": "tokenizer.json",
+        "bytes": 11422654
+      },
+      {
+        "name": "tokenizer_config.json",
+        "bytes": 9732
+      },
+      {
+        "name": "vocab.json",
+        "bytes": 2776833
+      }
+    ],
+    "config_sha256": "f7c4eadfbbf522470667b797a3c89be2524832d2d599797248dc304fff447c30"
+  },
+  "family": "llama",
+  "permutation": null,
+  "variant": {
+    "init": "random",
+    "init_seed": 0,
+    "shuffle": "none",
+    "shuffle_seed": null
+  },
+  "bos_id": null,
+  "device": "cuda",
+  "readout_dtype": "float32",
+  "absorption": {
+    "sites": [
+      1,
+      12,
+      24
+    ],
+    "etas": [
+      0.01
+    ],
+    "seeds": 3,
+    "scale": "token",
+    "exclude_sinks": true,
+    "n_states": 37,
+    "windows": 32,
+    "floor_max": 1.0041072528110817e-05,
+    "swaps": true,
+    "kinds": [
+      "noise",
+      "real",
+      "rotated"
+    ],
+    "masks": [
+      "all",
+      "swapped",
+      "changed",
+      "preserved"
+    ],
+    "variants": [
+      "after",
+      "carried",
+      "matched"
+    ],
+    "sinks_fixed": true,
+    "token_sets_fixed": true,
+    "output_kl": true,
+    "eta_random": 0.01,
+    "massive_factor": 20.0
+  },
+  "summary": [
+    {
+      "site": 1,
+      "eta": 0.01,
+      "realised_R_at_site": 0.0099999996018596,
+      "realised_over_eta": 0.9999999601859599,
+      "rounded_away_fraction": 0.0,
+      "nonfinite_fraction": 0.0,
+      "R_last": 0.03649522779354204,
+      "absorption": 3.6495229268650355,
+      "absorption_low": 3.6077147572824337,
+      "absorption_high": 3.6903490205670644,
+      "absorption_median": 3.652431524971832,
+      "absorption_ratio_of_means": 3.649522924656456,
+      "R_last_over_eta": 3.649522779354204,
+      "R_final": 0.03652280549673985,
+      "absorption_final": 3.6522806972990343,
+      "absorption_final_low": 3.610337498704357,
+      "absorption_final_high": 3.6931520646570823,
+      "absorption_final_median": 3.655236234012063,
+      "absorption_final_ratio_of_means": 3.6522806950860347,
+      "curve": [
+        0.0099999996018596,
+        0.011607370145308474,
+        0.013093920822332922,
+        0.014419184803652268,
+        0.01562517691248407,
+        0.016729115411483995,
+        0.0177666155116943,
+        0.01874423285092538,
+        0.01967677976548051,
+        0.020563678563727688,
+        0.021402487085045628,
+        0.022215980920009315,
+        0.02300531807122752,
+        0.023758379141024,
+        0.024485978685940307,
+        0.02519550040597096,
+        0.025879564112983644,
+        0.026547565745810665,
+        0.027207362077509362,
+        0.0278389896848239,
+        0.02846481098094955,
+        0.029073716160686065,
+        0.0296716583155406,
+        0.03025206098876273,
+        0.03081630494367952,
+        0.0313740970644479,
+        0.03192199712308745,
+        0.032466646206254765,
+        0.032996995393962905,
+        0.033519790100399405,
+        0.03403237353389462,
+        0.034538596790904805,
+        0.035038775143524006,
+        0.035534262812385954,
+        0.03601882831814389,
+        0.03649522779354204
+      ]
+    },
+    {
+      "site": 12,
+      "eta": 0.01,
+      "realised_R_at_site": 0.009999999834690243,
+      "realised_over_eta": 0.9999999834690243,
+      "rounded_away_fraction": 0.0,
+      "nonfinite_fraction": 0.0,
+      "R_last": 0.016398223233409226,
+      "absorption": 1.6398223506085807,
+      "absorption_low": 1.635080054452825,
+      "absorption_high": 1.644874129557479,
+      "absorption_median": 1.6394371732147721,
+      "absorption_ratio_of_means": 1.639822350448786,
+      "R_last_over_eta": 1.6398223233409226,
+      "R_final": 0.01640557156254848,
+      "absorption_final": 1.6405571835348711,
+      "absorption_final_low": 1.6357958907225953,
+      "absorption_final_high": 1.6456090354857458,
+      "absorption_final_median": 1.6401682248257998,
+      "absorption_final_ratio_of_means": 1.6405571833748591,
+      "curve": [
+        0.009999999834690243,
+        0.010353102921120202,
+        0.010689950189165149,
+        0.011015767144272104,
+        0.011333412296759585,
+        0.011639561019061755,
+        0.011939124679580951,
+        0.012234740405498693,
+        0.01251752315632378,
+        0.012797744129784405,
+        0.013070534875926873,
+        0.01333856608835049,
+        0.013598579079067957,
+        0.0138514464488253,
+        0.014101499128931511,
+        0.014347168830378603,
+        0.0145911979683054,
+        0.014828992047114298,
+        0.01506335077768502,
+        0.015293375860589245,
+        0.015520497244627524,
+        0.01574471255298704,
+        0.015967154138100646,
+        0.016184677078854293,
+        0.016398223233409226
+      ]
+    },
+    {
+      "site": 24,
+      "eta": 0.01,
+      "realised_R_at_site": 0.009999999854092795,
+      "realised_over_eta": 0.9999999854092795,
+      "rounded_away_fraction": 0.0,
+      "nonfinite_fraction": 0.0,
+      "R_last": 0.012054205619885277,
+      "absorption": 1.205420579578889,
+      "absorption_low": 1.204075912521495,
+      "absorption_high": 1.2067715356634132,
+      "absorption_median": 1.2056715622213594,
+      "absorption_ratio_of_means": 1.2054205795764823,
+      "R_last_over_eta": 1.2054205619885277,
+      "R_final": 0.012055853886219362,
+      "absorption_final": 1.2055854062149909,
+      "absorption_final_low": 1.204236347534512,
+      "absorption_final_high": 1.2069361660671751,
+      "absorption_final_median": 1.2058296231904975,
+      "absorption_final_ratio_of_means": 1.205585406212296,
+      "curve": [
+        0.009999999854092795,
+        0.010185710561927408,
+        0.010368856746936217,
+        0.010549183168526119,
+        0.010728259464182582,
+        0.010902797628659755,
+        0.011074579214133943,
+        0.011243494373047724,
+        0.011409945543467378,
+        0.011574581527383998,
+        0.011737738202403609,
+        0.011897320994952073,
+        0.012054205619885277
+      ]
+    }
+  ],
+  "corpus": {
+    "tokens": 65537,
+    "documents": 1,
+    "windows": 32
+  }
+}
